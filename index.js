@@ -65,7 +65,7 @@ app.use("/api/collab-transactions", collabtransactionRoutes);
 
 app.use('/auth', authRoutes);
 
-app.get("/backend", (req, res) => { res.send("<h1> Welcome to the Expense Management API</h1>") });
+// app.get("/backend", (req, res) => { res.send("<h1> Welcome to the Expense Management API</h1>") });
 
 //build location
 app.use(express.static(path.join(__dirname, 'build')));
