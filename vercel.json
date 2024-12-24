@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/v1/auth(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/v2/transactionBooks(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/v3/client(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/v4/transaction(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/collab-transactions(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/uploads(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/auth(.*)",
+      "dest": "index.js"
+    },
+
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
+    }
+  ]
+}
