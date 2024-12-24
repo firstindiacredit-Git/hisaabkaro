@@ -13,7 +13,7 @@ router.get('/google',
 
 // Google Auth Callback
 router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: `${process.env.REACT_APP_URL}/login` }),
+    passport.authenticate('google', { failureRedirect: `${process.env.REACT_APP_URI}/login` }),
     (req, res) => {
         try {
             // Generate JWT token
@@ -29,10 +29,10 @@ router.get('/google/callback',
             );
 
             // Redirect to frontend with token
-            res.redirect(`${process.env.REACT_APP_URL}/home?token=${token}`);
+            res.redirect(`${process.env.REACT_APP_URI}/home?token=${token}`);
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URL}/login?error=authentication_failed`);
+            res.redirect(`${process.env.REACT_APP_URI}/login?error=authentication_failed`);
         }
     }
 );
@@ -75,7 +75,7 @@ router.get('/logout', (req, res) => {
         if (err) {
             return res.status(500).json({ error: 'Error logging out' });
         }
-        res.redirect(`${process.env.REACT_APP_URL}`);
+        res.redirect(`${process.env.REACT_APP_URI}`);
     });
 });
 
