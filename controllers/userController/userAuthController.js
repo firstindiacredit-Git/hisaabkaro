@@ -74,16 +74,32 @@ const login = async (req, res) => {
   const { email, phone, password } = req.body;
 
   try {
-    // Find the user by email or phone
-    const user = await User.findOne({ $or: [{ email }, { phone }] });
+    // Validate required fields
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // Build query based on provided credentials
+    let query = {};
+    if (email) {
+      query.email = email.toLowerCase();
+    } else if (phone) {
+      query.phone = phone;
+    } else {
+      return res.status(400).json({ message: "Please provide either email or phone number" });
+    }
+
+    // Find the user
+    const user = await User.findOne(query);
+    
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(400).json({ message: "No user found" });
     }
 
     // Compare provided password with stored hashed password
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Incorrect password. Please try again" });
     }
 
     // Generate a JWT token
@@ -108,7 +124,12 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    res.status(500).json({ message: "Error logging in", error });
+    console.error("Login error:", error);
+    res.status(500).json({ 
+      message: "An error occurred during login. Please try again later", 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

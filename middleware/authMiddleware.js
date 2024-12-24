@@ -20,8 +20,7 @@ const authenticate = (req, res, next) => {
     req.user = decoded;
     req.userId = decoded.id; // Set userId on the request
    req.userEmail = decoded.email; // Set userEmail on the request
-    console.log("Decoded user in middleware:", decoded); // Debug log
-    console.log("email in middleware:", req.user.phone); // Debug log
+    
     
     next();
   } catch (error) {
