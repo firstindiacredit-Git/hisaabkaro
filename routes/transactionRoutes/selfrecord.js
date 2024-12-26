@@ -2,11 +2,12 @@ const express = require("express");
 const router = express.Router();
 const transactionController = require("../../controllers/SelfTransactionController/selfTransactionController");
 const authenticate = require("../../middleware/authMiddleware");
-
+const upload = require("../../middleware/uploadSelfTransactionfile");
 // Route to create a new transaction
 router.post(
   "/create-transaction",
   authenticate,
+  upload.single("file"),
   transactionController.createTransaction
 );
 
@@ -25,9 +26,10 @@ router.get(
 );
 
 // Route to update an existing transaction
-router.put(
-  "/update-transaction/:id",
+router.patch(
+  "/transactions/:id/history/:entryId",
   authenticate,
+  upload.single("file"),
   transactionController.updateTransaction
 );
 
@@ -35,7 +37,7 @@ router.put(
 router.delete(
   "/delete-transaction/:id",
   authenticate,
-  transactionController.deleteTransaction
+  transactionController.deleteTransactionEntry
 );
 
 router.get("/getbook-transactions/:bookId", authenticate, transactionController.getTransactionsByBookId);
