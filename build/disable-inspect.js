@@ -11,7 +11,7 @@
             if (
                 e.key === 'F12' || 
                 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
-                (e.ctrlKey && e.key === 'U')
+                (e.ctrlKey && (e.key === 'U' || e.key.toLowerCase() === 'u'))
             ) {
                 e.preventDefault();
                 return false;
