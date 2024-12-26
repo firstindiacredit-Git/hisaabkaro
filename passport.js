@@ -3,9 +3,7 @@ const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const User = require('./models/userModel/userModel');
 
 // Debug logs for environment variables
-console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
-console.log('CALLBACK_URL:', process.env.CALLBACK_URL);
-
+ 
 passport.use(
     new GoogleStrategy(
         {
@@ -36,8 +34,7 @@ passport.use(
                         user.hasCompletedProfile = false;
                     }
                     await user.save();
-                    console.log('Updated existing user:', user);
-                } else {
+                 } else {
                     // Create new user without phone number
                     user = new User({
                         googleId: profile.id,
@@ -62,8 +59,7 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-    console.log('Serializing user:', user.id);
-    done(null, user.id);
+     done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
