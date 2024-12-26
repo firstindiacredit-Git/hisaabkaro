@@ -17,14 +17,6 @@ const transactionSchema = new mongoose.Schema(
       ref: "ClientUser",
       required: true,
     },
-    transactionType: {
-      type: String,
-      enum: ["you will get", "you will give"],
-      required: true,
-    },
-    file: {
-      type: String,
-    },
     transactionHistory: [
       {
         transactionType: {
@@ -34,6 +26,11 @@ const transactionSchema = new mongoose.Schema(
         },
         amount: {
           type: Number,
+          required: true,
+          min: 0,
+        },
+        file: {
+          type: String,
         },
         description: {
           type: String,
@@ -46,37 +43,35 @@ const transactionSchema = new mongoose.Schema(
           type: Number,
           default: 0,
         },
-        
       },
     ],
     outstandingBalance: {
       type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
 );
 
-// Pre-save hook to update the transaction history and calculate the outstanding balance
+// Pre-save hook to update the outstanding balance
 transactionSchema.pre("save", async function (next) {
   const transaction = this;
 
-  // Calculate finalAmount
-  if (transaction.transactionType === "you will get") {
-    transaction.finalAmount = transaction.amount;
-  } else if (transaction.transactionType === "you will give") {
-    transaction.finalAmount = -transaction.amount;
-  }
+  // Aggregate outstanding balance from transaction history
+  let newOutstandingBalance = 0;
 
-  // Handle outstanding balance calculation only if the transaction is confirmed
-  let newOutstandingBalance = transaction.outstandingBalance;
-    // If confirmed, update the outstanding balance
-    if (transaction.transactionType === "you will get") {
-      newOutstandingBalance += transaction.amount;
-    } else if (transaction.transactionType === "you will give") {
-      newOutstandingBalance -= transaction.amount;
+  transaction.transactionHistory.forEach((entry) => {
+    if (entry.transactionType === "you will get") {
+      newOutstandingBalance += entry.amount;
+    } else if (entry.transactionType === "you will give") {
+      newOutstandingBalance -= entry.amount;
     }
-  // Update the outstanding balance for the transaction document
+    entry.outstandingBalance = newOutstandingBalance; // Update entry balance
+  });
+
+  // Update the root outstanding balance
   transaction.outstandingBalance = newOutstandingBalance;
+
   next();
 });
 
