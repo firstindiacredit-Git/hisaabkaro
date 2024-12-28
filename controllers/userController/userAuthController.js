@@ -59,11 +59,9 @@ const signup = async (req, res) => {
   } catch (error) {
     // Handle Multer file size error
     if (error.code === "LIMIT_FILE_SIZE") {
-      return res
-        .status(400)
-        .json({
-          message: "File size is too large. Maximum allowed size is 5MB.",
-        });
+      return res.status(400).json({
+        message: "File size is too large. Maximum allowed size is 5MB.",
+      });
     }
     res.status(500).json({ message: "Error signing up user", error });
   }
@@ -86,20 +84,27 @@ const login = async (req, res) => {
     } else if (phone) {
       query.phone = phone;
     } else {
-      return res.status(400).json({ message: "Please provide either email or phone number" });
+      return res
+        .status(400)
+        .json({ message: "Please provide either email or phone number" });
     }
 
     // Find the user
     const user = await User.findOne(query);
-    
+
     if (!user) {
       return res.status(400).json({ message: "No user found" });
     }
 
+    console.log("Password from request:", password);
+    console.log("Stored hashed password:", user.password);
+
     // Compare provided password with stored hashed password
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Incorrect password. Please try again" });
+      return res
+        .status(400)
+        .json({ message: "Incorrect password. Please try again" });
     }
 
     // Generate a JWT token
@@ -125,10 +130,10 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ 
-      message: "An error occurred during login. Please try again later", 
+    res.status(500).json({
+      message: "An error occurred during login. Please try again later",
       error: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -195,11 +200,9 @@ const updateProfile = async (req, res) => {
   } catch (error) {
     // Handle Multer file size error
     if (error.code === "LIMIT_FILE_SIZE") {
-      return res
-        .status(400)
-        .json({
-          message: "File size is too large. Maximum allowed size is 5MB.",
-        });
+      return res.status(400).json({
+        message: "File size is too large. Maximum allowed size is 5MB.",
+      });
     }
     res.status(500).json({ message: "Error updating user profile", error });
   }
