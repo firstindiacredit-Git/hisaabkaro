@@ -35,8 +35,8 @@ router.patch(
 
 // Route to delete a transaction by ID
 router.delete(
-  "/delete-transaction/:id",
-  authenticate,
+ "/transactions/:id/entries/:entryId",
+
   transactionController.deleteTransactionEntry
 );
 
