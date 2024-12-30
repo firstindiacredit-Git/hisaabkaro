@@ -2,6 +2,7 @@ const Transaction = require("../../models/transactionModel/selfRecordModel");
 const fs = require("fs");
 const path = require("path");
 const {upload}=require("../../middleware/uploadSelfTransactionfile")
+const mongoose = require("mongoose");
 
 exports.createTransaction = async (req, res) => {
   try {
@@ -145,9 +146,6 @@ exports.getTransactions = async (req, res) => {
 };
 
 // Update an existing transaction (for example, adjusting the amount or description)
-
-
- 
 exports.updateTransaction = async (req, res) => {
   try {
     const { id, entryId } = req.params;
@@ -253,9 +251,9 @@ exports.updateTransaction = async (req, res) => {
 // Delete a transaction
 exports.deleteTransactionEntry = async (req, res) => {
   try {
-    const { id, entryId } = req.params;
-
-    // Find the transaction by ID
+    const   id       = req.params.id;
+    const   entryId  = req.params.entryId;
+     // Find the transaction by ID
     const transaction = await Transaction.findById(id);
 
     if (!transaction) {
@@ -322,7 +320,7 @@ exports.deleteTransactionEntry = async (req, res) => {
   }
 };
  
-const mongoose = require("mongoose");
+
  
 
 exports.getTransactionsByBookId = async (req, res) => {
