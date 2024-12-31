@@ -4,6 +4,34 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel/userModel');
 
+// Endpoint to get Google Auth URL
+router.get('/google/url', (req, res) => {
+    try {
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.CALLBACK_URL) {
+            console.error('Missing required environment variables for Google OAuth');
+            return res.status(500).json({ 
+                error: 'OAuth configuration error',
+                message: 'Server is not properly configured for Google authentication'
+            });
+        }
+
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+            `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+            `redirect_uri=${process.env.CALLBACK_URL}&` +
+            `response_type=code&` +
+            `scope=email profile&` +
+            `access_type=offline`;
+        
+        res.json({ url: googleAuthUrl });
+    } catch (error) {
+        console.error('Error generating Google auth URL:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: 'Failed to generate authentication URL'
+        });
+    }
+});
+
 // Google Auth Routes
 router.get('/google',
     passport.authenticate('google', {
@@ -22,17 +50,17 @@ router.get('/google/callback',
                     id: req.user._id,
                     email: req.user.email,
                     name: req.user.name,
-                    hasPhone: !!req.user.phone // Add flag to check if phone exists
+                    hasPhone: !!req.user.phone
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
             // Redirect to frontend with token
-            res.redirect(`${process.env.REACT_APP_URI}/home?token=${token}`);
+            res.redirect(`${process.env.REACT_APP_URI}/auth/google/callback?token=${token}`);
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URI}/login?error=authentication_failed`);
+            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed`);
         }
     }
 );

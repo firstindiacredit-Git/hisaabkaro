@@ -52,6 +52,7 @@ app.use(passport.session());
 
 //api for authentications
 app.use("/api/v1/auth", userRoutes);
+app.use("/auth", authRoutes); 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //api for books
@@ -64,8 +65,6 @@ app.use("/api/v4/transaction", selftransactionRoutes);
 
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
-
-app.use("/auth", authRoutes);
 
 app.get("/backend", (req, res) => {
   res.send("<h1> Welcome to the Expense Management API</h1>");
