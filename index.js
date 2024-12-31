@@ -78,7 +78,7 @@ app.get("*", (req, res) => {
 });
 
 //port
-const PORT = 5100 || process.env.PORT;
+const PORT = 5100 || process.env.PORT; 
 
 //listen server
 app.listen(PORT, () => {
