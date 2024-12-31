@@ -233,12 +233,12 @@ const getTransactionstoclient = async (req, res) => {
 
      try {
        await notificationapi.send(notificationData);
-       console.log("Notification sent successfully!");
+      //  console.log("Notification sent successfully!");
      } catch (notifyError) {
-       console.error("Error sending notification:", notifyError);
+    console.error("Error sending notification:", notifyError);
      }
    } catch (error) {
-     console.error(error); // Log the error for debugging
+    console.error(error); // Log the error for debugging
      res.status(500).json({ error: error.message });
    }
  };

@@ -5,7 +5,6 @@ const colors = require("colors");
 
 // Load env vars first
 dotenv.config();
-
 const session = require("express-session");
 const passport = require("./passport");
 const userRoutes = require("./routes/userRoutes/userRoutes");
@@ -52,6 +51,7 @@ app.use(passport.session());
 
 //api for authentications
 app.use("/api/v1/auth", userRoutes);
+app.use("/auth", authRoutes); 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //api for books
@@ -65,8 +65,6 @@ app.use("/api/v4/transaction", selftransactionRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
 
-app.use("/auth", authRoutes);
-
 app.get("/backend", (req, res) => {
   res.send("<h1> Welcome to the Expense Management API</h1>");
 });
@@ -79,9 +77,9 @@ app.get("*", (req, res) => {
 });
 
 //port
-const PORT = 5100 || process.env.PORT;
+const PORT = 5100 || process.env.PORT; 
 
 //listen server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`.bgYellow);
-});
+}); 

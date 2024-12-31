@@ -7,13 +7,18 @@ const User = require('../models/userModel/userModel');
 // Google Auth Routes
 router.get('/google',
     passport.authenticate('google', {
-        scope: ['email', 'profile']
+        scope: ['email', 'profile'],
+        accessType: 'offline',
+        prompt: 'consent'
     })
 );
 
 // Google Auth Callback
 router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: `${process.env.REACT_APP_URI}/login` }),
+    passport.authenticate('google', { 
+        failureRedirect: `${process.env.REACT_APP_URI}/login`,
+        session: false 
+    }),
     (req, res) => {
         try {
             // Generate JWT token
@@ -22,17 +27,18 @@ router.get('/google/callback',
                     id: req.user._id,
                     email: req.user.email,
                     name: req.user.name,
-                    hasPhone: !!req.user.phone // Add flag to check if phone exists
+                    hasPhone: !!req.user.phone,
+                    profilePicture: req.user.profilePicture
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
             // Redirect to frontend with token
-            res.redirect(`${process.env.REACT_APP_URI}/home?token=${token}`);
+            res.redirect(`${process.env.REACT_APP_URI}/auth/google/callback?token=${token}`);
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URI}/login?error=authentication_failed`);
+            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed`);
         }
     }
 );
