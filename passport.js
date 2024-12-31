@@ -2,8 +2,6 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const User = require('./models/userModel/userModel');
 
-// Debug logs for environment variables
- 
 passport.use(
     new GoogleStrategy(
         {
@@ -11,11 +9,11 @@ passport.use(
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.CALLBACK_URL,
             passReqToCallback: true,
+            scope: ['email', 'profile'],
+            proxy: true // Add this for secure proxy
         },
         async function (request, accessToken, refreshToken, profile, done) {
             try {
-            
-
                 // Find user by Google ID or email
                 let user = await User.findOne({ 
                     $or: [
@@ -28,14 +26,14 @@ passport.use(
                     // Update existing user
                     user.googleId = profile.id;
                     user.name = profile.displayName;
+                    user.email = profile.email;
                     user.profilePicture = profile.picture;
-                    // Don't overwrite phone if it exists
                     if (!user.hasCompletedProfile) {
                         user.hasCompletedProfile = false;
                     }
                     await user.save();
-                 } else {
-                    // Create new user without phone number
+                } else {
+                    // Create new user
                     user = new User({
                         googleId: profile.id,
                         email: profile.email,
@@ -46,7 +44,6 @@ passport.use(
                         countryCode: null
                     });
                     await user.save();
-                    console.log('Created new user:', user);
                 }
 
                 return done(null, user);
@@ -59,7 +56,7 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-     done(null, user.id);
+    done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
