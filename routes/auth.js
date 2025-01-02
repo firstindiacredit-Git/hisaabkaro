@@ -50,6 +50,11 @@ router.get('/google/callback',
     }),
     (req, res) => {
         try {
+            if (!req.user) {
+                console.error('No user data in request');
+                return res.redirect(`${process.env.REACT_APP_URI}/login?error=no_user_data`);
+            }
+
             // Generate JWT token
             const token = jwt.sign(
                 {
@@ -62,11 +67,20 @@ router.get('/google/callback',
                 { expiresIn: '7d' }
             );
 
-            // Redirect to frontend with token
-            res.redirect(`${process.env.REACT_APP_URI}/auth/google/callback?token=${token}`);
+            console.log('Successfully generated token for user:', req.user.email);
+            
+            // Ensure REACT_APP_URI is properly formatted
+            const baseUrl = process.env.REACT_APP_URI.endsWith('/') 
+                ? process.env.REACT_APP_URI.slice(0, -1) 
+                : process.env.REACT_APP_URI;
+
+            const redirectUrl = `${baseUrl}/auth/google/callback?token=${token}`;
+            console.log('Redirecting to:', redirectUrl);
+            
+            res.redirect(redirectUrl);
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed`);
+            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
         }
     }
 );
