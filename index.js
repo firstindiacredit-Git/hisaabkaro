@@ -23,7 +23,6 @@ connectDb();
 const app = express();
 //middlewares
 app.use(express.json());
-
 // CORS configuration
 const allowedOrigins = [
     'https://www.hisaabkaro.com',

@@ -39,7 +39,7 @@ router.get('/google', (req, res, next) => {
         scope: ['email', 'profile'],
         accessType: 'offline',
         prompt: 'consent',
-        state: true
+        session: true
     })(req, res, next);
 });
 
