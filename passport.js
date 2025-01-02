@@ -4,6 +4,20 @@ const User = require('./models/userModel/userModel');
 
 // Debug logs for environment variables
  
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        console.error('Error deserializing user:', error);
+        done(error, null);
+    }
+});
+
 passport.use(
     new GoogleStrategy(
         {
@@ -13,12 +27,11 @@ passport.use(
             passReqToCallback: true,
             scope: ['email', 'profile'],
             accessType: 'offline',
-            prompt: 'consent'
+            prompt: 'consent',
+            state: true
         },
         async function (request, accessToken, refreshToken, profile, done) {
             try {
-            
-
                 // Find user by Google ID or email
                 let user = await User.findOne({ 
                     $or: [
@@ -31,14 +44,14 @@ passport.use(
                     // Update existing user
                     user.googleId = profile.id;
                     user.name = profile.displayName;
+                    user.email = profile.email;
                     user.profilePicture = profile.picture;
-                    // Don't overwrite phone if it exists
                     if (!user.hasCompletedProfile) {
                         user.hasCompletedProfile = false;
                     }
                     await user.save();
-                 } else {
-                    // Create new user without phone number
+                } else {
+                    // Create new user
                     user = new User({
                         googleId: profile.id,
                         email: profile.email,
@@ -49,9 +62,7 @@ passport.use(
                         countryCode: null
                     });
                     await user.save();
-                    console.log('Created new user:', user);
                 }
-
                 return done(null, user);
             } catch (error) {
                 console.error('Error in Google Strategy:', error);
@@ -60,19 +71,5 @@ passport.use(
         }
     )
 );
-
-passport.serializeUser((user, done) => {
-     done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-    try {
-        const user = await User.findById(id);
-        done(null, user);
-    } catch (error) {
-        console.error('Error deserializing user:', error);
-        done(error, null);
-    }
-});
 
 module.exports = passport;

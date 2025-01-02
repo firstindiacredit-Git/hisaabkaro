@@ -34,12 +34,17 @@ router.get('/google/url', (req, res) => {
 
 // Google Auth Routes
 router.get('/google',
-    passport.authenticate('google', {
-        scope: ['email', 'profile'],
-        accessType: 'offline',
-        prompt: 'consent',
-        response_type: 'code'
-    })
+    (req, res, next) => {
+        // Clear any existing session
+        req.logout(() => {
+            passport.authenticate('google', {
+                scope: ['email', 'profile'],
+                accessType: 'offline',
+                prompt: 'consent',
+                state: true
+            })(req, res, next);
+        });
+    }
 );
 
 // Google Auth Callback
@@ -67,17 +72,17 @@ router.get('/google/callback',
                 { expiresIn: '7d' }
             );
 
-            console.log('Successfully generated token for user:', req.user.email);
-            
-            // Ensure REACT_APP_URI is properly formatted
-            const baseUrl = process.env.REACT_APP_URI.endsWith('/') 
-                ? process.env.REACT_APP_URI.slice(0, -1) 
-                : process.env.REACT_APP_URI;
-
-            const redirectUrl = `${baseUrl}/auth/google/callback?token=${token}`;
-            console.log('Redirecting to:', redirectUrl);
-            
-            res.redirect(redirectUrl);
+            // Clear the session after generating token
+            req.logout(() => {
+                // Ensure we're using HTTPS for production
+                const baseUrl = process.env.REACT_APP_URI;
+                // Remove any trailing slashes
+                const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+                const redirectUrl = `${cleanBaseUrl}/auth/google/callback?token=${token}`;
+                
+                console.log('Redirecting to:', redirectUrl);
+                res.redirect(redirectUrl);
+            });
         } catch (error) {
             console.error('Error in Google callback:', error);
             res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
