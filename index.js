@@ -23,7 +23,6 @@ connectDb();
 const app = express();
 //middlewares
 app.use(express.json());
-
 // CORS configuration
 const allowedOrigins = [
     'https://www.hisaabkaro.com',
@@ -98,7 +97,7 @@ app.get("*", (req, res) => {
  });
 
 //port
-const PORT = 5100 || process.env.PORT; 
+const PORT =  process.env.PORT||5100; 
 
 //listen server
 app.listen(PORT, () => {

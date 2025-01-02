@@ -11,6 +11,10 @@ passport.deserializeUser(async (id, done) => {
     try {
         console.log('Deserializing user ID:', id);
         const user = await User.findById(id);
+        if (!user) {
+            console.error('User not found during deserialization');
+            return done(new Error('User not found'), null);
+        }
         done(null, user);
     } catch (error) {
         console.error('Error deserializing user:', error);
@@ -41,7 +45,7 @@ passport.use(
                     user = await User.create({
                         email: profile.email,
                         name: profile.displayName,
-                        profilePicture: profile.picture,
+                        profilePicture: profile.picture || 'default_picture_url',  // Fallback in case no picture
                         provider: 'google',
                         googleId: profile.id
                     });
