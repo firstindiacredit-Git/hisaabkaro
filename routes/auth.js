@@ -35,48 +35,59 @@ router.get('/google/url', (req, res) => {
 // Google Auth Routes
 router.get('/google',
     (req, res, next) => {
-        // Clear any existing session
-        req.logout(() => {
-            passport.authenticate('google', {
-                scope: ['email', 'profile'],
-                accessType: 'offline',
-                prompt: 'consent',
-                state: true
-            })(req, res, next);
-        });
+        console.log('Starting Google OAuth flow');
+        passport.authenticate('google', {
+            scope: ['email', 'profile'],
+            accessType: 'offline',
+            prompt: 'consent',
+            state: true
+        })(req, res, next);
     }
 );
 
 // Google Auth Callback
 router.get('/google/callback',
-    passport.authenticate('google', { 
-        failureRedirect: `${process.env.REACT_APP_URI}/login`,
-        failureMessage: true 
-    }),
-    (req, res) => {
+    (req, res, next) => {
+        console.log('Received callback from Google');
+        passport.authenticate('google', { 
+            failureRedirect: `${process.env.REACT_APP_URI}/login`,
+            failureMessage: true 
+        })(req, res, next);
+    },
+    async (req, res) => {
         try {
+            console.log('Processing Google callback');
+            
             if (!req.user) {
                 console.error('No user data in request');
                 return res.redirect(`${process.env.REACT_APP_URI}/login?error=no_user_data`);
             }
 
             // Generate JWT token
+            const tokenPayload = {
+                id: req.user._id,
+                email: req.user.email,
+                name: req.user.name,
+                hasPhone: !!req.user.phone,
+                picture: req.user.profilePicture || null
+            };
+
+            console.log('Creating token with payload:', tokenPayload);
+
             const token = jwt.sign(
-                {
-                    id: req.user._id,
-                    email: req.user.email,
-                    name: req.user.name,
-                    hasPhone: !!req.user.phone
-                },
+                tokenPayload,
                 process.env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
             // Clear the session after generating token
             req.logout(() => {
-                // Ensure we're using HTTPS for production
                 const baseUrl = process.env.REACT_APP_URI;
-                // Remove any trailing slashes
+                if (!baseUrl) {
+                    console.error('REACT_APP_URI is not defined');
+                    return res.redirect('/login?error=config_error');
+                }
+
                 const cleanBaseUrl = baseUrl.replace(/\/$/, '');
                 const redirectUrl = `${cleanBaseUrl}/auth/google/callback?token=${token}`;
                 

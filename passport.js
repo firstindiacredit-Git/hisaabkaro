@@ -2,14 +2,14 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const User = require('./models/userModel/userModel');
 
-// Debug logs for environment variables
- 
 passport.serializeUser((user, done) => {
+    console.log('Serializing user:', user.email);
     done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
     try {
+        console.log('Deserializing user ID:', id);
         const user = await User.findById(id);
         done(null, user);
     } catch (error) {
@@ -24,48 +24,38 @@ passport.use(
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.CALLBACK_URL,
-            passReqToCallback: true,
-            scope: ['email', 'profile'],
-            accessType: 'offline',
-            prompt: 'consent',
-            state: true
+            passReqToCallback: true
         },
-        async function (request, accessToken, refreshToken, profile, done) {
+        async (request, accessToken, refreshToken, profile, done) => {
             try {
-                // Find user by Google ID or email
-                let user = await User.findOne({ 
-                    $or: [
-                        { googleId: profile.id },
-                        { email: profile.email }
-                    ]
+                console.log('Received Google profile:', {
+                    id: profile.id,
+                    email: profile.email,
+                    name: profile.displayName
                 });
-                
-                if (user) {
-                    // Update existing user
-                    user.googleId = profile.id;
-                    user.name = profile.displayName;
-                    user.email = profile.email;
-                    user.profilePicture = profile.picture;
-                    if (!user.hasCompletedProfile) {
-                        user.hasCompletedProfile = false;
-                    }
-                    await user.save();
-                } else {
-                    // Create new user
-                    user = new User({
-                        googleId: profile.id,
+
+                let user = await User.findOne({ email: profile.email });
+
+                if (!user) {
+                    console.log('Creating new user for:', profile.email);
+                    user = await User.create({
                         email: profile.email,
                         name: profile.displayName,
                         profilePicture: profile.picture,
-                        hasCompletedProfile: false,
-                        phone: null,
-                        countryCode: null
+                        provider: 'google',
+                        googleId: profile.id
                     });
+                } else {
+                    console.log('Found existing user:', user.email);
+                    // Update existing user's Google-specific info
+                    user.googleId = profile.id;
+                    user.profilePicture = profile.picture || user.profilePicture;
                     await user.save();
                 }
+
                 return done(null, user);
             } catch (error) {
-                console.error('Error in Google Strategy:', error);
+                console.error('Error in Google strategy:', error);
                 return done(error, null);
             }
         }
