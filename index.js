@@ -16,23 +16,24 @@ const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const path = require("path");
 
-
 //databse call
 connectDb();
- 
+
 //rest object
 const app = express();
 
 //middlewares
 app.use(express.json());
-app.use(
-  cors({
-    origin: process.env.REACT_APP_URI, // Frontend URL
-    credentials: true, // Important for cookies/sessions
-    methods: "GET,POST,PUT,DELETE,PATCH,OPTION",
-    allowedHeaders: "Content-Type, Authorization",
-  })
-);
+
+// CORS configuration
+const corsOptions = {
+    origin: process.env.REACT_APP_URI,
+    credentials: true,
+    methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["set-cookie"]
+};
+app.use(cors(corsOptions));
 
 // Session configuration
 app.use(
