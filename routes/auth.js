@@ -33,24 +33,22 @@ router.get('/google/url', (req, res) => {
 });
 
 // Google Auth Routes
-router.get('/google',
-    (req, res, next) => {
-        console.log('Starting Google OAuth flow');
-        passport.authenticate('google', {
-            scope: ['email', 'profile'],
-            accessType: 'offline',
-            prompt: 'consent',
-            state: true
-        })(req, res, next);
-    }
-);
+router.get('/google', (req, res, next) => {
+    console.log('Starting Google OAuth flow');
+    passport.authenticate('google', {
+        scope: ['email', 'profile'],
+        accessType: 'offline',
+        prompt: 'consent',
+        state: true
+    })(req, res, next);
+});
 
 // Google Auth Callback
 router.get('/google/callback',
     (req, res, next) => {
         console.log('Received callback from Google');
         passport.authenticate('google', { 
-            failureRedirect: `${process.env.REACT_APP_URI}/login`,
+            failureRedirect: `${process.env.REACT_APP_URI}/login?error=auth_failed`,
             failureMessage: true 
         })(req, res, next);
     },
@@ -80,15 +78,13 @@ router.get('/google/callback',
                 { expiresIn: '7d' }
             );
 
+            // Set CORS headers explicitly for the callback
+            res.header('Access-Control-Allow-Origin', process.env.REACT_APP_URI);
+            res.header('Access-Control-Allow-Credentials', 'true');
+
             // Clear the session after generating token
             req.logout(() => {
-                const baseUrl = process.env.REACT_APP_URI;
-                if (!baseUrl) {
-                    console.error('REACT_APP_URI is not defined');
-                    return res.redirect('/login?error=config_error');
-                }
-
-                const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+                const cleanBaseUrl = process.env.REACT_APP_URI.replace(/\/$/, '');
                 const redirectUrl = `${cleanBaseUrl}/auth/google/callback?token=${token}`;
                 
                 console.log('Redirecting to:', redirectUrl);
