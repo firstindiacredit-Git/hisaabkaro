@@ -5,7 +5,6 @@ const colors = require("colors");
 
 // Load env vars first
 dotenv.config();
-
 const session = require("express-session");
 const passport = require("./passport");
 const userRoutes = require("./routes/userRoutes/userRoutes");
@@ -16,6 +15,7 @@ const collabtransactionRoutes = require("./routes/transactionRoutes/collabtransa
 const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const path = require("path");
+
 
 //databse call
 connectDb();
