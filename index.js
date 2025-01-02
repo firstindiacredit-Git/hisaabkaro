@@ -19,7 +19,7 @@ const path = require("path");
 
 //databse call
 connectDb();
-
+ 
 //rest object
 const app = express();
 

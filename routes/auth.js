@@ -35,13 +35,19 @@ router.get('/google/url', (req, res) => {
 // Google Auth Routes
 router.get('/google',
     passport.authenticate('google', {
-        scope: ['email', 'profile']
+        scope: ['email', 'profile'],
+        accessType: 'offline',
+        prompt: 'consent',
+        response_type: 'code'
     })
 );
 
 // Google Auth Callback
 router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: `${process.env.REACT_APP_URI}/login` }),
+    passport.authenticate('google', { 
+        failureRedirect: `${process.env.REACT_APP_URI}/login`,
+        failureMessage: true 
+    }),
     (req, res) => {
         try {
             // Generate JWT token
