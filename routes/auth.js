@@ -33,66 +33,42 @@ router.get('/google/url', (req, res) => {
 });
 
 // Google Auth Routes
-router.get('/google', (req, res, next) => {
-    console.log('Starting Google OAuth flow');
-    passport.authenticate('google', {
-        scope: ['email', 'profile'],
-        accessType: 'offline',
-        prompt: 'consent',
-        session: true
-    })(req, res, next);
-});
+router.get('/google', passport.authenticate('google', {
+    scope: ['email', 'profile'],
+    accessType: 'offline',
+    prompt: 'consent'
+}));
 
 // Google Auth Callback
-router.get('/google/callback',
-    (req, res, next) => {
-        console.log('Received callback from Google');
-        passport.authenticate('google', { 
-            failureRedirect: `${process.env.REACT_APP_URI}/login?error=auth_failed`,
-            failureMessage: true 
-        })(req, res, next);
-    },
+router.get('/google/callback', 
+    passport.authenticate('google', { 
+        failureRedirect: `${process.env.REACT_APP_URI || 'http://localhost:5100'}/login?error=auth_failed`,
+        session: false 
+    }),
     async (req, res) => {
         try {
-            console.log('Processing Google callback');
-            
             if (!req.user) {
-                console.error('No user data in request');
-                return res.redirect(`${process.env.REACT_APP_URI}/login?error=no_user_data`);
+                return res.redirect(`${process.env.REACT_APP_URI || 'http://localhost:5100'}/login?error=no_user_data`);
             }
 
-            // Generate JWT token
-            const tokenPayload = {
-                id: req.user._id,
-                email: req.user.email,
-                name: req.user.name,
-                hasPhone: !!req.user.phone,
-                picture: req.user.profilePicture || null
-            };
-
-            console.log('Creating token with payload:', tokenPayload);
-
             const token = jwt.sign(
-                tokenPayload,
+                {
+                    id: req.user._id,
+                    email: req.user.email,
+                    name: req.user.name,
+                    hasPhone: !!req.user.phone,
+                    picture: req.user.profilePicture || null
+                },
                 process.env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
-            // Set CORS headers explicitly for the callback
-            res.header('Access-Control-Allow-Origin', process.env.REACT_APP_URI);
-            res.header('Access-Control-Allow-Credentials', 'true');
-
-            // Clear the session after generating token
-            req.logout(() => {
-                const cleanBaseUrl = process.env.REACT_APP_URI.replace(/\/$/, '');
-                const redirectUrl = `${cleanBaseUrl}/auth/google/callback?token=${token}`;
-                
-                console.log('Redirecting to:', redirectUrl);
-                res.redirect(redirectUrl);
-            });
+            // Use REACT_APP_URI for frontend URL
+            const frontendUrl = process.env.REACT_APP_URI || 'http://localhost:5100';
+            res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
+            res.redirect(`${process.env.REACT_APP_URI || 'http://localhost:5100'}/login?error=auth_failed`);
         }
     }
 );
