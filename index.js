@@ -59,7 +59,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/v2/transactionBooks", bookRoutes);
 //api for clients
 app.use("/api/v3/client", clientUserRoutes);
-
 //api for self transactions
 app.use("/api/v4/transaction", selftransactionRoutes);
 
