@@ -20,7 +20,7 @@ passport.deserializeUser(async (id, done) => {
         console.error('Error deserializing user:', error);
         done(error, null);
     }
-});
+}); 
 
 passport.use(
     new GoogleStrategy(
