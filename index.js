@@ -23,30 +23,50 @@ connectDb();
 const app = express();
 //middlewares
 app.use(express.json());
+
 // CORS configuration
 const allowedOrigins = [
     'https://www.hisaabkaro.com',
     'https://hisaabkaro.com',
     'http://localhost:3000',
-    'www.hisaabkaro.com',
-    'https://www.hisaabkaro.com/auth/google/callback'
-     // Keep for local development
+    'http://localhost:5100'
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        // Check if the origin is allowed
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            // Check exact match
+            if (origin === allowedOrigin) return true;
+            // Check if it's a subdomain of an allowed domain
+            if (origin.endsWith('.hisaabkaro.com')) return true;
+            return false;
+        });
+
+        if (isAllowed) {
             callback(null, true);
         } else {
+            console.error('CORS blocked for origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["set-cookie"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["set-cookie"],
+    preflightContinue: true,
+    optionsSuccessStatus: 204
 };
+
 app.use(cors(corsOptions));
+
+// Trust proxy - required for secure cookies behind a proxy
+app.set('trust proxy', 1);
 
 // Session configuration
 app.use(
@@ -54,15 +74,15 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Required for secure cookies behind a proxy
+    proxy: true,
+    name: 'apnakhata.sid',
     cookie: {
-      secure: true, // Required for production HTTPS
+      secure: true,
       httpOnly: true,
-      sameSite: 'none', // Required for cross-site cookies
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      domain: '.hisaabkaro.com' // Allow cookies for both www and non-www
-    },
-    name: 'apnakhata.sid'
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: '.hisaabkaro.com'
+    }
   })
 );
 

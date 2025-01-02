@@ -4,7 +4,7 @@ const User = require('./models/userModel/userModel');
 
 passport.serializeUser((user, done) => {
     console.log('Serializing user:', user.email);
-    done(null, user.id);
+    done(null, user.id);  // Serialize only the user ID for session storage
 });
 
 passport.deserializeUser(async (id, done) => {
@@ -15,7 +15,7 @@ passport.deserializeUser(async (id, done) => {
             console.error('User not found during deserialization');
             return done(new Error('User not found'), null);
         }
-        done(null, user);
+        done(null, user);  // Attach user object to the session
     } catch (error) {
         console.error('Error deserializing user:', error);
         done(error, null);
@@ -28,7 +28,7 @@ passport.use(
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.CALLBACK_URL,
-            passReqToCallback: true
+            passReqToCallback: true  // Pass request object to the callback function
         },
         async (request, accessToken, refreshToken, profile, done) => {
             try {
@@ -38,10 +38,12 @@ passport.use(
                     name: profile.displayName
                 });
 
+                // Look for an existing user by email
                 let user = await User.findOne({ email: profile.email });
 
                 if (!user) {
                     console.log('Creating new user for:', profile.email);
+                    // Create new user if not found
                     user = await User.create({
                         email: profile.email,
                         name: profile.displayName,
@@ -53,14 +55,14 @@ passport.use(
                     console.log('Found existing user:', user.email);
                     // Update existing user's Google-specific info
                     user.googleId = profile.id;
-                    user.profilePicture = profile.picture || user.profilePicture;
+                    user.profilePicture = profile.picture || user.profilePicture;  // Use existing picture if available
                     await user.save();
                 }
 
-                return done(null, user);
+                return done(null, user);  // Return the user object after successful authentication
             } catch (error) {
                 console.error('Error in Google strategy:', error);
-                return done(error, null);
+                return done(error, null);  // Pass error to the callback
             }
         }
     )
