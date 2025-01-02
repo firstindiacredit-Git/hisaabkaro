@@ -26,8 +26,20 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
+const allowedOrigins = [
+    'https://www.hisaabkaro.com',
+    'https://hisaabkaro.com',
+    'http://localhost:3000' // Keep for local development
+];
+
 const corsOptions = {
-    origin: process.env.REACT_APP_URI,
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -41,12 +53,15 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true, // Required for secure cookies behind a proxy
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Required for production HTTPS
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+      sameSite: 'none', // Required for cross-site cookies
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      domain: '.hisaabkaro.com' // Allow cookies for both www and non-www
     },
+    name: 'apnakhata.sid'
   })
 );
 
