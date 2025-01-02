@@ -27,7 +27,8 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: "*", // Or explicitly specify your frontend's URL
+    origin: process.env.REACT_APP_URI, // Frontend URL
+    credentials: true, // Important for cookies/sessions
     methods: "GET,POST,PUT,DELETE,PATCH,OPTION",
     allowedHeaders: "Content-Type, Authorization",
   })
@@ -41,6 +42,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   })
@@ -74,7 +77,7 @@ app.use(express.static(path.join(__dirname, "build")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "build", "index.html"));
-});
+ });
 
 //port
 const PORT = 5100 || process.env.PORT; 
