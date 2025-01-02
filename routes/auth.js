@@ -1,20 +1,21 @@
 const express = require('express');
 const passport = require('passport');
-const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel/userModel');
+const router = express.Router();
+
+// Middleware for checking environment variables
+function checkEnvVars(req, res, next) {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.CALLBACK_URL || !process.env.REACT_APP_URI || !process.env.JWT_SECRET) {
+        console.error('Missing required environment variables');
+        return res.status(500).json({ error: 'Server is not properly configured for authentication' });
+    }
+    next();
+}
 
 // Endpoint to get Google Auth URL
-router.get('/google/url', (req, res) => {
+router.get('/google/url', checkEnvVars, (req, res) => {
     try {
-        if (!process.env.GOOGLE_CLIENT_ID || !process.env.CALLBACK_URL) {
-            console.error('Missing required environment variables for Google OAuth');
-            return res.status(500).json({ 
-                error: 'OAuth configuration error',
-                message: 'Server is not properly configured for Google authentication'
-            });
-        }
-
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
             `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
             `redirect_uri=${process.env.CALLBACK_URL}&` +
@@ -25,45 +26,36 @@ router.get('/google/url', (req, res) => {
         res.json({ url: googleAuthUrl });
     } catch (error) {
         console.error('Error generating Google auth URL:', error);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            message: 'Failed to generate authentication URL'
-        });
+        res.status(500).json({ error: 'Failed to generate authentication URL' });
     }
 });
 
 // Google Auth Routes
-router.get('/google',
-    (req, res, next) => {
-        console.log('Starting Google OAuth flow');
-        passport.authenticate('google', {
-            scope: ['email', 'profile'],
-            accessType: 'offline',
-            prompt: 'consent',
-            state: true
-        })(req, res, next);
-    }
-);
+router.get('/google', checkEnvVars, (req, res, next) => {
+    passport.authenticate('google', {
+        scope: ['email', 'profile'],
+        accessType: 'offline',
+        prompt: 'consent',
+        state: true
+    })(req, res, next);
+});
 
 // Google Auth Callback
-router.get('/google/callback',
-    (req, res, next) => {
-        console.log('Received callback from Google');
-        passport.authenticate('google', { 
+// Google Auth Callback
+router.get('/google/callback', checkEnvVars,
+    async (req, res, next) => {
+        passport.authenticate('google', {
             failureRedirect: `${process.env.REACT_APP_URI}/login`,
-            failureMessage: true 
+            failureMessage: true
         })(req, res, next);
     },
     async (req, res) => {
         try {
-            console.log('Processing Google callback');
-            
             if (!req.user) {
                 console.error('No user data in request');
                 return res.redirect(`${process.env.REACT_APP_URI}/login?error=no_user_data`);
             }
 
-            // Generate JWT token
             const tokenPayload = {
                 id: req.user._id,
                 email: req.user.email,
@@ -72,34 +64,27 @@ router.get('/google/callback',
                 picture: req.user.profilePicture || null
             };
 
-            console.log('Creating token with payload:', tokenPayload);
+            const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-            const token = jwt.sign(
-                tokenPayload,
-                process.env.JWT_SECRET,
-                { expiresIn: '7d' }
-            );
-
-            // Clear the session after generating token
-            req.logout(() => {
-                const baseUrl = process.env.REACT_APP_URI;
-                if (!baseUrl) {
-                    console.error('REACT_APP_URI is not defined');
-                    return res.redirect('/login?error=config_error');
+            // Use callback in req.logout() to ensure it completes before continuing
+            req.logout((err) => {
+                if (err) {
+                    console.error('Logout error:', err);
+                    return res.redirect(`${process.env.REACT_APP_URI}/login?error=logout_failed`);
                 }
 
-                const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+                // After logout, redirect to the appropriate URL
+                const cleanBaseUrl = process.env.REACT_APP_URI.replace(/\/$/, '');
                 const redirectUrl = `${cleanBaseUrl}/auth/google/callback?token=${token}`;
-                
-                console.log('Redirecting to:', redirectUrl);
                 res.redirect(redirectUrl);
             });
         } catch (error) {
             console.error('Error in Google callback:', error);
-            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
+            res.redirect(`${process.env.REACT_APP_URI}/login?error=auth_failed`);
         }
     }
 );
+
 
 // Update phone number
 router.patch('/update-phone', async (req, res) => {
@@ -109,7 +94,13 @@ router.patch('/update-phone', async (req, res) => {
             return res.status(401).json({ message: 'No token provided' });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            return res.status(401).json({ message: 'Invalid or expired token' });
+        }
+
         const { phone } = req.body;
 
         // Validate phone number
@@ -119,13 +110,11 @@ router.patch('/update-phone', async (req, res) => {
 
         // Check if phone number is already in use
         const existingUser = await User.findOne({ phone });
-        if (existingUser && existingUser._id.toString() !== decoded.id) {
+        if (existingUser && !existingUser._id.equals(decoded.id)) {
             return res.status(400).json({ message: 'Phone number already in use' });
         }
 
-        // Update user's phone number
         await User.findByIdAndUpdate(decoded.id, { phone });
-
         res.json({ success: true, message: 'Phone number updated successfully' });
     } catch (error) {
         console.error('Error updating phone number:', error);
@@ -134,20 +123,21 @@ router.patch('/update-phone', async (req, res) => {
 });
 
 // Logout Route
-router.get('/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error logging out' });
-        }
-        res.redirect(`${process.env.REACT_APP_URI}`);
-    });
+router.get('/logout', async (req, res) => {
+    try {
+        await req.logout();
+        res.redirect(process.env.REACT_APP_URI);
+    } catch (error) {
+        console.error('Error logging out:', error);
+        res.status(500).json({ error: 'Error logging out' });
+    }
 });
 
 // Check Auth Status
 router.get('/status', (req, res) => {
     res.json({
         isAuthenticated: req.isAuthenticated(),
-        user: req.user
+        user: req.user || null
     });
 });
 
