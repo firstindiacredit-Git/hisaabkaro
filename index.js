@@ -21,7 +21,6 @@ connectDb();
 
 //rest object
 const app = express();
-
 //middlewares
 app.use(express.json());
 
@@ -29,7 +28,10 @@ app.use(express.json());
 const allowedOrigins = [
     'https://www.hisaabkaro.com',
     'https://hisaabkaro.com',
-    'http://localhost:3000' // Keep for local development
+    'http://localhost:3000',
+    'www.hisaabkaro.com',
+    'https://www.hisaabkaro.com/auth/google/callback'
+     // Keep for local development
 ];
 
 const corsOptions = {
