@@ -28,6 +28,7 @@ passport.use(
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.CALLBACK_URL,
+            scope: [ 'email', 'profile'],
             passReqToCallback: true  // Pass request object to the callback function
         },
         async (request, accessToken, refreshToken, profile, done) => {
