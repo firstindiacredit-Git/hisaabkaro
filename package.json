@@ -27,6 +27,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth2": "^0.2.0",
     "token": "^0.1.0",
+    "twilio": "^5.4.0",
     "web": "^0.0.2",
     "web-push": "^3.6.7"
   }
