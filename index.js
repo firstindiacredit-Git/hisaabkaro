@@ -84,7 +84,6 @@ app.use(
     }
   })
 );
-
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
