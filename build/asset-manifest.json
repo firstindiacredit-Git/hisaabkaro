@@ -1,12 +1,13 @@
 {
   "files": {
     "main.css": "/static/css/main.417c8bc7.css",
-    "main.js": "/static/js/main.a9189a48.js",
+    "main.js": "/static/js/main.3e5f1423.js",
     "static/js/206.f8819006.chunk.js": "/static/js/206.f8819006.chunk.js",
+    "static/media/sad-avatar.svg": "/static/media/sad-avatar.1a20ab02278d5aad95e6c779667bd620.svg",
     "index.html": "/index.html"
   },
   "entrypoints": [
     "static/css/main.417c8bc7.css",
-    "static/js/main.a9189a48.js"
+    "static/js/main.3e5f1423.js"
   ]
 }
