@@ -83,6 +83,7 @@ app.use(
       domain: '.hisaabkaro.com'
     }
   })
+  
 );
 // Initialize Passport
 app.use(passport.initialize());
