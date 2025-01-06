@@ -431,54 +431,51 @@ const updateTransaction = async (req, res) => {
 
     const userId = req.user.id; // Get the user ID from the authenticated user
 
-    // Validate input
     if (!transactionId || !entryId) {
-      return res
-        .status(400)
-        .json({ message: "Missing required transaction IDs." });
+      return res.status(400).json({ message: "Missing required transaction IDs." });
     }
 
- const parsedAmount = parseFloat(amount);
- if (isNaN(parsedAmount) || parsedAmount <= 0) {
-   return res
-     .status(400)
-     .json({ message: "Amount must be a positive number." });
- }
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ message: "Amount must be a positive number." });
+    }
 
     if (
       transactionType &&
       !["you will get", "you will give"].includes(transactionType)
     ) {
-      return res
-        .status(400)
-        .json({ message: "Invalid transaction type provided." });
+      return res.status(400).json({ message: "Invalid transaction type provided." });
     }
 
-    // Fetch the existing transaction
     const transaction = await Transaction.findById(transactionId);
-
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found." });
     }
 
-    // Find the specific transaction entry to update
     const entry = transaction.transactionHistory.id(entryId);
-
     if (!entry) {
       return res.status(404).json({ message: "Transaction entry not found." });
     }
 
-    // Prevent updates by users who did not initiate the entry
     if (entry.initiaterId.toString() !== userId) {
       return res.status(403).json({
         message: "You are not authorized to update this transaction.",
       });
     }
 
-    // Handle file upload
     let mediaFile = entry.file; // Retain the existing file if no new file is uploaded
     if (req.file) {
       mediaFile = req.file.path; // Update the file path with the newly uploaded file
+    }
+
+    // Adjust outstanding balance for entries transitioning from confirmed to pending
+    if (entry.confirmationStatus === "confirmed") {
+      if (entry.transactionType === "you will get") {
+        transaction.outstandingBalance -= entry.amount; // Remove the amount from the balance
+      } else if (entry.transactionType === "you will give") {
+        transaction.outstandingBalance += entry.amount; // Add the amount to the balance
+      }
+      entry.confirmationStatus = "pending"; // Change status to pending
     }
 
     // Update the fields
@@ -487,32 +484,37 @@ const updateTransaction = async (req, res) => {
     if (transactionType !== undefined) entry.transactionType = transactionType;
 
     entry.transactionDate = new Date(); // Update transaction date to reflect changes
-    entry.confirmationStatus = "pending"; // Reset confirmation status to "pending" after updates
     entry.file = mediaFile; // Update the file path in the entry
+
+    // Recalculate outstanding balance for the entire transaction history
+    let updatedBalance = 0;
+    transaction.transactionHistory.forEach((txn) => {
+      if (txn.confirmationStatus === "confirmed") {
+        updatedBalance += txn.transactionType === "you will get" ? -txn.amount : txn.amount;
+      }
+    });
+    transaction.outstandingBalance = updatedBalance;
 
     // Save the updated transaction
     await transaction.save();
 
     res.status(200).json({
-      message: "Transaction updatted successfully.",
+      message: "Transaction updated successfully.",
       transaction,
     });
 
     // Send notification to the client about the update
-    const client = await Client.findById(transaction.clientUserId); // Assuming clientUserId is the client's unique ID
-
+    const client = await Client.findById(transaction.clientUserId);
     if (!client) {
-      return res.status(404).json({
-        message: "Client not found.",
-      });
+      return res.status(404).json({ message: "Client not found." });
     }
 
     const notificationData = {
       notificationId: "apnakhata_63_07", // Update notification ID if necessary
       user: {
-        id: transaction.clientUserId, // User ID or unique identifier
-        email: client.email, // Provide the client's email from the client model
-        number: client.mobile, // Provide the client's phone number from the client model
+        id: transaction.clientUserId,
+        email: client.email,
+        number: client.mobile,
       },
       mergeTags: {
         transactionType: entry.transactionType,
@@ -534,6 +536,7 @@ const updateTransaction = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 
 
