@@ -28,7 +28,9 @@ const allowedOrigins = [
     'https://www.hisaabkaro.com',
     'https://hisaabkaro.com',
     'http://localhost:3000',
-    'http://localhost:5100'
+    'http://localhost:5100',
+    'http://192.168.1.15:5100',
+    'http://192.168.1.15:3000'
 ];
 
 const corsOptions = {
