@@ -15,7 +15,6 @@ const collabtransactionRoutes = require("./routes/transactionRoutes/collabtransa
 const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const path = require("path");
-
 //databse call
 connectDb();
 
@@ -29,8 +28,7 @@ const allowedOrigins = [
     'https://hisaabkaro.com',
     'http://localhost:3000',
     'http://localhost:5100',
-    'http://192.168.1.15:5100',
-    'http://192.168.1.15:3000'
+   
 ];
 
 const corsOptions = {
