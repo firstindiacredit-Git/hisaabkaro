@@ -9,7 +9,6 @@ const {
 const signup = async (req, res) => {
   const { name, email, phone, password } = req.body;
   const profilePicture = req.file; // Access the uploaded file
-
   try {
     // Check if the user already exists (by email or phone)
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });

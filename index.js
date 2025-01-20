@@ -14,6 +14,7 @@ const clientUserRoutes = require("./routes/clientUserRoutes/clientUserRoutes");
 const collabtransactionRoutes = require("./routes/transactionRoutes/collabtransaction");
 const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
+const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 //databse call
 connectDb();
@@ -27,8 +28,10 @@ const allowedOrigins = [
     'https://www.hisaabkaro.com',
     'https://hisaabkaro.com',
     'http://localhost:3000',
+    'http://localhost:3500',
     'http://localhost:5100',
-   
+    'http://192.168.29.66:5100',
+    'http://192.168.29.66:3500'
 ];
 
 const corsOptions = {
@@ -99,7 +102,8 @@ app.use("/api/v2/transactionBooks", bookRoutes);
 app.use("/api/v3/client", clientUserRoutes);
 //api for self transactions
 app.use("/api/v4/transaction", selftransactionRoutes);
-
+//api for admin dashboard
+app.use("/api/v1/admin", adminRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
 
