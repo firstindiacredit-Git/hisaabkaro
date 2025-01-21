@@ -32,7 +32,8 @@ const allowedOrigins = [
     'http://localhost:5100',
     'http://192.168.29.66:5100',
     'http://192.168.29.66:3500',
-    'https://admin.hisaabkaro.com'
+    'https://admin.hisaabkaro.com',
+    'http://localhost:3001'
 ];
 
 const corsOptions = {
@@ -43,27 +44,16 @@ const corsOptions = {
         }
 
         // Check if the origin is allowed
-        const isAllowed = allowedOrigins.some(allowedOrigin => {
-            // Check exact match
-            if (origin === allowedOrigin) return true;
-            // Check if it's a subdomain of an allowed domain
-            if (origin.endsWith('.hisaabkaro.com')) return true;
-            return false;
-        });
-
-        if (isAllowed) {
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            console.error('CORS blocked for origin:', origin);
-          callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    exposedHeaders: ["set-cookie"],
-    preflightContinue: true,
-    optionsSuccessStatus: 204
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['set-cookie']
 };
 
 app.use(cors(corsOptions));
