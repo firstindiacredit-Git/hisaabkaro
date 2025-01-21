@@ -14,19 +14,16 @@ const getDashboardStats = async (req, res) => {
             email: 1,
             phone: 1
         }).sort({ createdAt: -1 });
-
         // Get total number of users
         const totalUsers = users.length;
-
         // Get total number of books
         const totalBooks = await Book.countDocuments();
-
         // Get total number of transactions
         const totalTransactions = await Transaction.countDocuments();
 
         // Calculate total amount from all transactions
-        const transactions = await Transaction.find({}, { amount: 1 });
-        const totalAmount = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+        const transactions = await Transaction.find({});
+        const totalAmount = transactions.reduce((sum, transaction) => sum + Math.abs(transaction.outstandingBalance || 0), 0);
 
         // Get recent users (joined in last 7 days)
         const sevenDaysAgo = new Date();
@@ -125,8 +122,101 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// Get all books with pagination, search and sorting
+const getBooks = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const sortField = req.query.sortField || 'createdAt';
+        const sortOrder = req.query.sortOrder || 'desc';
+
+        // Build search query
+        const searchQuery = search ? {
+            $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ]
+        } : {};
+
+        // Calculate skip value for pagination
+        const skip = (page - 1) * limit;
+
+        // Build sort object
+        const sort = {};
+        sort[sortField] = sortOrder === 'desc' ? -1 : 1;
+
+        // Get books with pagination and populate user details
+        const books = await Book.find(searchQuery)
+            .populate('userId', 'name email phone')
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .select('name description userId createdAt updatedAt totalAmount totalTransactions');
+
+        // Get total count for pagination
+        const totalBooks = await Book.countDocuments(searchQuery);
+
+        res.json({
+            success: true,
+            data: {
+                books,
+                pagination: {
+                    total: totalBooks,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(totalBooks / limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting books:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting books',
+            error: error.message
+        });
+    }
+};
+
+// Delete book and its transactions
+const deleteBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+
+        // Check if book exists
+        const book = await Book.findById(bookId);
+        if (!book) {
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found'
+            });
+        }
+
+        // Delete book's transactions
+        await Transaction.deleteMany({ bookId: bookId });
+
+        // Delete the book
+        await Book.findByIdAndDelete(bookId);
+
+        res.json({
+            success: true,
+            message: 'Book and all associated transactions deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting book:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting book',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getUsers,
-    deleteUser
+    deleteUser,
+    getBooks,
+    deleteBook
 };
