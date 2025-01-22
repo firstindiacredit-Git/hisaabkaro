@@ -338,7 +338,7 @@ const getTransactionById = async (req, res) => {
 const addExistingTransaction = async (req, res) => {
   try {
     const transactionId = req.params.transactionId;
-    console.log("Transaction ID is here:", transactionId);
+    // console.log("Transaction ID is here:", transactionId);
 
     const {
       transactionType,
@@ -527,7 +527,7 @@ const updateTransaction = async (req, res) => {
 
     try {
       await notificationapi.send(notificationData);
-      console.log("Update notification sent successfully!");
+      // console.log("Update notification sent successfully!");
     } catch (notifyError) {
       console.error("Error sending update notification:", notifyError);
     }
