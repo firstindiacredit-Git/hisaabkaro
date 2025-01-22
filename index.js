@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const colors = require("colors");
-
 // Load env vars first
 dotenv.config();
 const session = require("express-session");
@@ -18,7 +17,6 @@ const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 //databse call
 connectDb();
-
 //rest object
 const app = express();
 //middlewares
