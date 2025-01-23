@@ -6,6 +6,7 @@ on:
 
 jobs:
   deploy:
+
     runs-on: ubuntu-latest
 
     steps:
@@ -28,92 +29,23 @@ jobs:
       with:
         host: ec2-51-21-131-184.eu-north-1.compute.amazonaws.com
         username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure the private key is added to GitHub Secrets
         script: |
-          set -e
-          echo "Starting deployment..."
-          
-          cd /home/ubuntu/hisaabkaro
-          echo "Current directory: $(pwd)"
-          ls -la
-          
-          echo "Stopping PM2 processes..."
-          pm2 stop all || true
-          
-          echo "Pulling latest changes..."
-          git stash || true
+          cd ~/hisaabkaro
           git pull origin main
-          
-          echo "Installing backend dependencies..."
-          npm ci
-          
-          echo "Checking frontend directory..."
-          if [ ! -d "khatabookfrontend" ]; then
-            echo "Frontend directory not found!"
-            ls -la
-            exit 1
-          fi
-          
-          cd khatabookfrontend
-          echo "Installing ALL frontend dependencies including devDependencies..."
-          rm -rf node_modules package-lock.json
-          NODE_ENV=development npm install
-          
-          echo "Running frontend build with increased memory..."
-          export NODE_OPTIONS="--max-old-space-size=4096"
-          export REACT_APP_URL=https://hisaabkaro.com
-          export GENERATE_SOURCEMAP=false
-          
-          npm run build || {
-            echo "Build failed. Checking build logs..."
-            cat /home/ubuntu/.npm/_logs/$(ls -t /home/ubuntu/.npm/_logs | head -n1)
-            exit 1
-          }
-          
-          echo "Checking build output..."
-          ls -la build || {
-            echo "Build directory not created!"
-            exit 1
-          }
-          
-          cd ..
-          echo "Moving build files..."
-          if [ -d "build" ]; then
-            echo "Removing old build..."
-            rm -rf build
-          fi
-          
-          mv khatabookfrontend/build . || {
-            echo "Failed to move build directory. Checking source and destination:"
-            ls -la khatabookfrontend/
-            ls -la
-            exit 1
-          }
-          
-          echo "Setting permissions..."
-          sudo chown -R ubuntu:ubuntu build || true
-          sudo chmod -R 755 build || true
-          
-          echo "Starting PM2 processes..."
-          pm2 start all || pm2 start index.js
-          
-          echo "Deployment completed"
-          pm2 list
-
-    # Set environment variables
-    - name: Setup environment
-      if: success()
+          pm2 restart all
+    # Set environment variables on the server (only if .env doesn't already exist)
+    - name: Ensure .env file is not modified
       uses: appleboy/ssh-action@v0.1.7
       with:
         host: ec2-51-21-131-184.eu-north-1.compute.amazonaws.com
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /home/ubuntu/hisaabkaro
+          cd ~/hisaabkaro
           if [ ! -f ".env" ]; then
-            echo "Creating .env file..."
             touch .env
             echo "${{ secrets.CRM_ENV_FILE }}" > .env
-            sudo chown ubuntu:ubuntu .env
-            sudo chmod 600 .env
+          else
+            echo ".env file already exists, skipping update."
           fi
