@@ -105,6 +105,7 @@ app.get("/backend", (req, res) => {
 });
 
 //build location
+//build location
 app.use(express.static(path.join(__dirname, "build")));
 
 app.get("*", (req, res) => {
