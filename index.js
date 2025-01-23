@@ -15,7 +15,6 @@ const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
-
 //databse call
 connectDb();
 
