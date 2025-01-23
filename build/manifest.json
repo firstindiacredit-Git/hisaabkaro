@@ -1,25 +1,58 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Hisaab करो",
+  "name": "Hisaab करो - Smart Business Expense Management",
+  "description": "Digital khata book for small businesses to manage accounts, expenses, and customer credit records",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "Favicon Hisaabkaro.svg",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo192.png",
+      "src": "HisaabKaroTransparent.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo512.png",
+      "src": "HisaabKaroTransparent.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#f7a000",
+  "background_color": "#ffffff",
+  "orientation": "any",
+  "categories": ["finance", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Add Transaction",
+      "short_name": "Add",
+      "description": "Add a new transaction",
+      "url": "/add-transaction",
+      "icons": [{ "src": "Favicon Hisaabkaro.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "Favicon Hisaabkaro.svg", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Dashboard View"
+    }
+  ],
+  "prefer_related_applications": false
 }
