@@ -12,6 +12,11 @@ const transactionBookSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    profile: {  // Adding the profile field
+      type: String,  // Adjust the type based on what kind of data you expect
+      trim: true,
+      default: "",  // Optional: Default value for an empty profile
+    },
   },
   {
     timestamps: true,

@@ -1,4 +1,6 @@
 const ClientUser = require("../../models/clientUserModel/clientUserModel");
+const Transaction = require("../../models/transactionModel/transactionModel");
+const SelfRecord = require("../../models/transactionModel/selfRecordModel");
 
 // Create a new client user
 exports.createClientUser = async (req, res) => {
@@ -105,19 +107,40 @@ exports.deleteClientUser = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
 
-    // Delete the client user only if it belongs to the logged-in user
-    const clientUser = await ClientUser.findOneAndDelete({ _id: id, userId });
-
+    // First check if the client exists
+    const clientUser = await ClientUser.findOne({ _id: id, userId });
     if (!clientUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Client not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "Client not found" 
+      });
     }
 
-    res
-      .status(200)
-      .json({ success: true, message: "Client deleted successfully" });
+    // Delete all associated transactions from both models
+    const deleteResults = await Promise.all([
+      Transaction.deleteMany({ clientUserId: id }),
+      SelfRecord.deleteMany({ clientUserId: id })
+    ]);
+
+    const totalTransactionsDeleted = deleteResults[0].deletedCount + deleteResults[1].deletedCount;
+
+    // Delete the client user
+    await ClientUser.findOneAndDelete({ _id: id, userId });
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Client and all associated transactions deleted successfully`,
+      details: {
+        clientName: clientUser.name,
+        transactionsDeleted: totalTransactionsDeleted
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in deleteClientUser:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete client and transactions",
+      error: error.message 
+    });
   }
 };

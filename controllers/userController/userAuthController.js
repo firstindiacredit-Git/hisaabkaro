@@ -94,9 +94,7 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "No user found" });
     }
-
-    console.log("Password from request:", password);
-    console.log("Stored hashed password:", user.password);
+ 
 
     // Compare provided password with stored hashed password
     const isMatch = await comparePassword(password, user.password);

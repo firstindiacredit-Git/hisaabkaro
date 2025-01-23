@@ -15,12 +15,16 @@ const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
+
 //databse call
 connectDb();
+
 //rest object
 const app = express();
+
 //middlewares
 app.use(express.json());
+
 // CORS configuration
 const allowedOrigins = [
     'https://www.hisaabkaro.com',
@@ -80,11 +84,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 //api for authentications
 app.use("/api/v1/auth", userRoutes);
 app.use("/auth", authRoutes); 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
 //api for books
 app.use("/api/v2/transactionBooks", bookRoutes);
 //api for clients
