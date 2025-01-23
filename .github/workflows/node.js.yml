@@ -6,7 +6,6 @@ on:
 
 jobs:
   deploy:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -29,14 +28,61 @@ jobs:
       with:
         host: ec2-51-21-131-184.eu-north-1.compute.amazonaws.com
         username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure the private key is added to GitHub Secrets
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          # Navigate to project directory
           cd ~/hisaabkaro
+          
+          # Stop the application
+          pm2 stop all
+          
+          # Backup current build
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          if [ -d "build" ]; then
+            mv build "build_backup_$timestamp"
+          fi
+          
+          # Pull latest changes
           git pull origin main
-          pm2 restart all
+          
+          # Install backend dependencies
+          npm ci
+          
+          # Navigate to frontend directory
+          cd khatabookfrontend
+          
+          # Install frontend dependencies and build
+          npm ci
+          REACT_APP_URL="https://hisaabkaro.com" npm run build
+          
+          # Move build to backend and ensure permissions
+          cd ..
+          mv khatabookfrontend/build .
+          chmod -R 755 build
+          
+          # Verify build directory
+          if [ ! -d "build" ] || [ ! -f "build/index.html" ]; then
+            echo "Build directory is missing or incomplete"
+            # Restore backup if available
+            if [ -d "build_backup_$timestamp" ]; then
+              rm -rf build
+              mv "build_backup_$timestamp" build
+            fi
+            exit 1
+          fi
+          
+          # Start the application
+          pm2 start all
+          
+          # Verify application status
+          sleep 5
+          pm2 list
+          
+          # Clean old backups (keep last 5)
+          ls -dt build_backup_* | tail -n +6 | xargs -r rm -rf
 
-    # Set environment variables on the server (only if .env doesn't already exist)
-    - name: Ensure .env file is not modified
+    # Set environment variables
+    - name: Setup environment
       uses: appleboy/ssh-action@v0.1.7
       with:
         host: ec2-51-21-131-184.eu-north-1.compute.amazonaws.com
@@ -47,6 +93,4 @@ jobs:
           if [ ! -f ".env" ]; then
             touch .env
             echo "${{ secrets.CRM_ENV_FILE }}" > .env
-          else
-            echo ".env file already exists, skipping update."
           fi
