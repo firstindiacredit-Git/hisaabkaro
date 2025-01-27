@@ -41,9 +41,7 @@ const getTransactionstoclient = async (req, res) => {
     // Step 1: Find all clients with the same email as the logged-in user
     const clients = await Client.find({ email: req.user.email });
     if (!clients || clients.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No clients found with this email." });
+     return res.status(200).json({ transactions: [] }); 
     }
 
     // Collect all client IDs to use in the query
@@ -60,11 +58,9 @@ const getTransactionstoclient = async (req, res) => {
       .populate("clientUserId bookId") // Populate related user, client, and book details
       .lean(); // Returns plain JavaScript objects
 
-    if (transactions.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No transactions found for this email." });
-    }
+      if (!transactions || transactions.length === 0) {
+        return res.status(200).json({ transactions: [] });
+      }
 
     res.status(200).json({ transactions });
   } catch (error) {
