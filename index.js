@@ -32,7 +32,8 @@ const allowedOrigins = [
     'http://localhost:3500',
     'http://localhost:5100',
     'http://192.168.29.66:5100',
-    'http://192.168.29.66:3500',
+    'http://192.168.29.66:3000',
+    'http://192.168.1.20:3000',
     'https://admin.hisaabkaro.com',
     'http://localhost:3001'
 ];
