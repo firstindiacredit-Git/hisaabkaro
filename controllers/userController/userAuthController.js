@@ -178,6 +178,7 @@ const updateProfile = async (req, res) => {
     if (req.file) {
       const profilePicturePath = `/uploads/profile-pictures/${req.file.filename}`;
       user.profilePicture = profilePicturePath;
+      user.hasCustomProfilePicture = true; // Set this flag when user uploads a custom picture
     }
 
     // Save the updated user

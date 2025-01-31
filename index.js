@@ -41,8 +41,8 @@ const allowedOrigins = [
   "http://192.168.29.66:5100", // Allow HTTP for local development
   "https://192.168.29.66:3000",
   "http://192.168.29.66:3000", // Allow HTTP for local development
-  "https://192.168.1.4:3000",
-  "http://192.168.1.4:3000", // Allow HTTP for local development
+  "https://192.168.1.3:3000",
+  "http://192.168.1.3:3000", // Allow HTTP for local development
   "https://admin.hisaabkaro.com",
   "https://localhost:3001",
   "http://localhost:3001", // Allow HTTP for local development

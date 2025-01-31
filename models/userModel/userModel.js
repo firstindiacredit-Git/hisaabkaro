@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
     profilePicture: {
       type: String,
     },
+    hasCustomProfilePicture: {
+      type: Boolean,
+      default: false,
+    },
     googleId: {
       type: String,
       unique: true,
