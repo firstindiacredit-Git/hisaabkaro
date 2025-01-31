@@ -25,9 +25,9 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#f7a000",
+  "theme_color": "#4f46e5",
   "background_color": "#ffffff",
-  "orientation": "any",
+  "orientation": "portrait",
   "categories": ["finance", "business", "productivity"],
   "shortcuts": [
     {
