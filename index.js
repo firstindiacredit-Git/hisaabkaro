@@ -58,7 +58,6 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-
     // Check if the origin is allowed
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
