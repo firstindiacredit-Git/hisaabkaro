@@ -40,9 +40,9 @@ passport.use(
         });
 
         // Look for an existing user by email
-let user = await User.findOne({
-  $or: [{ googleId: profile.id }, { email: profile.email }],
-});
+        let user = await User.findOne({
+          $or: [{ googleId: profile.id }, { email: profile.email }],
+        });
         if (!user) {
           console.log("Creating new user for:", profile.email);
           // Create new user if not found
@@ -58,15 +58,16 @@ let user = await User.findOne({
         } else {
           console.log("Found existing user:", user.email);
           // Update existing user's Google-specific info
-            // user.googleId = profile.id;
-              user.googleId = profile.id;
-              user.name = profile.displayName;
-              user.profilePicture = profile.picture;
-              // Don't overwrite phone if it exists
-              if (!user.hasCompletedProfile) {
-                user.hasCompletedProfile = false;
-              }
-          user.profilePicture = profile.picture || user.profilePicture; // Use existing picture if available
+          user.googleId = profile.id;
+          user.name = profile.displayName;
+          // Only set profile picture if user hasn't uploaded a custom one
+          if (!user.hasCustomProfilePicture) {
+            user.profilePicture = profile.picture;
+          }
+          // Don't overwrite phone if it exists
+          if (!user.hasCompletedProfile) {
+            user.hasCompletedProfile = false;
+          }
           await user.save();
         }
 
