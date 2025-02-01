@@ -17,7 +17,6 @@ const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 //databse call
 connectDb();
-
 //rest object
 const app = express();
 
@@ -25,71 +24,30 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
-const allowedOrigins = [
-  "https://localhost",
-  "https://192.168.1.14:3000",
-  "http://192.168.1.14:3000", // Allow HTTP for local development
-  "https://www.hisaabkaro.com",
-  "https://hisaabkaro.com",
-  "https://localhost:3000",
-  "http://localhost:3000", // Allow HTTP for local development
-  "https://localhost:3500",
-  "http://localhost:3500", // Allow HTTP for local development
-  "https://localhost:5100",
-  "http://localhost:5100", // Allow HTTP for local development
-  "https://192.168.29.66:5100",
-  "http://192.168.29.66:5100", // Allow HTTP for local development
-  "https://192.168.29.66:3000",
-  "http://192.168.29.66:3000", // Allow HTTP for local development
-  "https://192.168.1.3:3000",
-  "http://192.168.1.3:3000", // Allow HTTP for local development
-  "https://admin.hisaabkaro.com",
-  "https://localhost:3001",
-  "http://localhost:3001", // Allow HTTP for local development
-  "http://10.0.2.2:3000", // Android Studio AVD special localhost
-  "http://10.0.2.2:5100", // Android Studio AVD special localhost
-  "https://10.0.2.2:3000", // Android Studio AVD special localhost
-  "https://10.0.2.2:5100", // Android Studio AVD special localhost
-];
+app.use(cors({
+  origin: 'http://localhost:3000', // Your frontend URL
+  credentials: true
+}));
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Capacitor, or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-    // Check if the origin is allowed
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "X-CSRF-Token",
-    "X-XSRF-TOKEN",
-    "Accept",
-    "Origin",
-    "Access-Control-Request-Method",
-    "Access-Control-Request-Headers",
-    "Cache-Control",
-    "Pragma"
-  ],
-  exposedHeaders: [
-    "set-cookie",
-    "access-control-allow-origin",
-    "access-control-allow-credentials"
-  ],
-  maxAge: 7200, // 2 hours in seconds
-  preflightContinue: false
-};
-
-app.use(cors(corsOptions));
+// Update headers for file serving and frame options
+app.use((req, res, next) => {
+  // Remove the X-Frame-Options header that's causing the issue
+  // res.header('X-Frame-Options', 'SAMEORIGIN');
+  
+  // Add necessary CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // For PDF files
+  if (req.path.match(/\.(pdf)$/i)) {
+    res.header('Content-Type', 'application/pdf');
+    res.header('Content-Disposition', 'inline');
+  }
+  
+  next();
+});
 
 // Trust proxy - required for secure cookies behind a proxy
 app.set("trust proxy", 1);
@@ -125,9 +83,33 @@ app.use(
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+app.use('/favicon.png', express.static(path.join(__dirname, 'public', 'favicon.png')));
 
-// Serve static files from uploads directory
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Update the static file serving middleware
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.pdf')) {
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline',
+        'X-Frame-Options': 'ALLOWALL'
+      });
+    }
+  }
+}));
+
+// Normalize file paths in responses
+app.use((req, res, next) => {
+  const oldJson = res.json;
+  res.json = function(data) {
+    // If the response contains file paths, normalize them
+    if (data && data.file) {
+      data.file = data.file.replace(/\\/g, '/');
+    }
+    return oldJson.call(this, data);
+  };
+  next();
+});
 
 //api for authentications
 app.use("/api/v1/auth", userRoutes);
@@ -149,6 +131,8 @@ app.get("/backend", (req, res) => {
 
 //build location
 //build location
+// app.use('/favicon.png', express.static(path.join(__dirname, 'public', 'favicon.png')));
+
 app.use(express.static(path.join(__dirname, "build")));
 
 app.get("*", (req, res) => {
@@ -161,4 +145,10 @@ const PORT = process.env.PORT || 5100;
 //listen server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`.bgYellow);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
