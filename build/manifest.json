@@ -4,19 +4,19 @@
   "description": "Digital khata book for small businesses to manage accounts, expenses, and customer credit records",
   "icons": [
     {
-      "src": "favicon.png",
+      "src": "/favicon.png",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon.png",
+      "src": "/favicon.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon.png",
+      "src": "/favicon.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
@@ -28,31 +28,5 @@
   "theme_color": "#4f46e5",
   "background_color": "#ffffff",
   "orientation": "portrait",
-  "categories": ["finance", "business", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Add Transaction",
-      "short_name": "Add",
-      "description": "Add a new transaction",
-      "url": "/add-transaction",
-      "icons": [{ "src": "favicon.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "View your dashboard",
-      "url": "/dashboard",
-      "icons": [{ "src": "favicon.png", "sizes": "192x192" }]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "Dashboard View"
-    }
-  ],
-  "prefer_related_applications": false
+  "orientations": ["portrait"]
 }
