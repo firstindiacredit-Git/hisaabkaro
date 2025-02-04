@@ -15,6 +15,7 @@ const selftransactionRoutes = require("./routes/transactionRoutes/selfrecord");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
+const upload = require("multer")();
 //databse call
 connectDb();
 //rest object
@@ -27,7 +28,7 @@ app.use(express.json());
 app.use(cors({
   origin: '*', // Your frontend URL
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow specific HTTP methods
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'], // Allow specific HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -38,7 +39,7 @@ app.use((req, res, next) => {
   
   // Add necessary CORS headers
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
   
@@ -126,6 +127,30 @@ app.use("/api/v4/transaction", selftransactionRoutes);
 app.use("/api/v1/admin", adminRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
+
+// Add this endpoint to handle PDF uploads
+app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    // Generate a public URL for the uploaded file
+    const fileUrl = `/uploads/transactions/${req.file.filename}`;
+
+    res.json({
+      success: true,
+      fileUrl,
+      message: 'PDF uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Error uploading PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading PDF'
+    });
+  }
+});
 
 app.get("/backend", (req, res) => {
   res.send("<h1> Welcome to the Expense Management API</h1>");
