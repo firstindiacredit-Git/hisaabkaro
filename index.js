@@ -2,6 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const colors = require("colors");
+const http = require('http');
+const { Server } = require('socket.io');
+const socketService = require('./services/socketService');
 // Load env vars first
 dotenv.config();
 const session = require("express-session");
@@ -16,10 +19,23 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 const upload = require("multer")();
+const notificationRoutes = require('./routes/notificationRoutes');
 //databse call
 connectDb();
 //rest object
 const app = express();
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.REACT_APP_URI,
+    methods: ['GET', 'POST']
+  }
+});
+
+
+// Initialize socket service
+socketService.init(io);
 
 //middlewares
 app.use(express.json());
@@ -127,6 +143,7 @@ app.use("/api/v4/transaction", selftransactionRoutes);
 app.use("/api/v1/admin", adminRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Add this endpoint to handle PDF uploads
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
@@ -170,7 +187,7 @@ app.get("*", (req, res) => {
 const PORT = process.env.PORT || 5100;
 
 //listen server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`.bgYellow);
 });
 
@@ -179,3 +196,27 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
 });
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected');
+
+  // Join client-specific room for notifications
+  socket.on('join', (userId) => {
+    console.log('Client joined room:', userId);
+    socket.join(userId);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
+// Update the notification emission in your transaction routes or wherever notifications are created
+const emitNotification = (notification, recipientEmail) => {
+  console.log('Emitting notification to:', `client_${recipientEmail}`);
+  io.to(`client_${recipientEmail}`).emit('newNotification', notification);
+};
+
+// Export the emitNotification function
+module.exports = { io, emitNotification };

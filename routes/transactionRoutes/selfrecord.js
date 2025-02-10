@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const transactionController = require("../../controllers/SelfTransactionController/selfTransactionController");
-const authenticate = require("../../middleware/authMiddleware");
+const {authenticate} = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/uploadSelfTransactionfile");
 // Route to create a new transaction
+
 router.post(
   "/create-transaction",
   authenticate,

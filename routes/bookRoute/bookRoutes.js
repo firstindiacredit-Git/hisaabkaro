@@ -6,7 +6,7 @@ const {
   deleteBook,
   getBookById,
 } = require("../../controllers/bookController/bookController");
-const authenticate = require("../../middleware/authMiddleware"); // Authentication middleware to verify the user
+const {authenticate} = require("../../middleware/authMiddleware"); // Authentication middleware to verify the user
 const {upload} = require("../../middleware/UploadBook");
 
 const router = express.Router();

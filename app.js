@@ -1,6 +1,14 @@
 const express = require('express');
 const path = require('path');
+const http = require('http');
+const { initializeWebSocket } = require('./controllers/notificationController/notificationController');
+const notificationRoutes = require('./routes/notificationRoutes');
+
 const app = express();
+const server = http.createServer(app);
+
+// Initialize WebSocket
+initializeWebSocket(server);
 
 // Add this near the top of your Express app configuration
 app.use((req, res, next) => {
@@ -11,6 +19,10 @@ app.use((req, res, next) => {
   next();
 }); 
 
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -20,3 +32,12 @@ app.get('/uploads/*.pdf', (req, res) => {
   res.setHeader('Content-Disposition', 'inline');
   next();
 }); 
+
+// API routes
+app.use('/api/notifications', notificationRoutes);
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
