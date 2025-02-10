@@ -11,10 +11,11 @@ const {
   deleteTransactionEntry,
 } = require("../../controllers/collaborativeBookController/collaborativeBookController"); // Adjust path if necessary
 
-const authenticate = require("../../middleware/authMiddleware");
+const {authenticate} = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/uploadMiddleware");
 // Route to create a new transaction
 router.post(
+
   "/create-transactions",
   authenticate,
   upload.single("file"),

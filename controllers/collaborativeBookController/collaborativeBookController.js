@@ -3,6 +3,8 @@ const Client = require("../../models/clientUserModel/clientUserModel");
 const User = require("../../models/userModel/userModel");
 const notificationapi = require("notificationapi-node-server-sdk").default;
 const upload = require("../../middleware/uploadMiddleware"); // Multer middleware for file uploads
+const notificationController = require('../notificationController');
+const axios = require('axios');
 
 require("dotenv").config();
 
@@ -70,178 +72,209 @@ const getTransactionstoclient = async (req, res) => {
 };
 
 // Create a new transaction
- 
+const createTransaction = async (req, res) => {
+  try {
+    const { bookId, clientUserId, transactionType, amount, description } =
+      req.body;
 
- const createTransaction = async (req, res) => {
-   try {
-     const { bookId, clientUserId, transactionType, amount, description } =
-       req.body;
+    const userId = req.user.id; // Get the user ID from the authenticated user
+    const initiatedBy = req.user.name; // Get the user name from the authenticated user
+    const initiaterId = req.user.id;
 
-     const userId = req.user.id; // Get the user ID from the authenticated user
-     const initiatedBy = req.user.name; // Get the user name from the authenticated user
-     const initiaterId = req.user.id;
+    // Validate input
+    if (!bookId) {
+      return res.status(400).json({ message: "Book ID is not provided." });
+    }
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is not provided." });
+    }
+    if (!clientUserId) {
+      return res
+        .status(400)
+        .json({ message: "Client User ID is not provided." });
+    }
+    if (!transactionType) {
+      return res
+        .status(400)
+        .json({ message: "Transaction type is not provided." });
+    }
+    if (!amount) {
+      return res.status(400).json({ message: "Amount is not provided." });
+    }
+    if (!initiatedBy) {
+      return res
+        .status(400)
+        .json({ message: "Initiated By is not provided." });
+    }
+    if (!initiaterId) {
+      return res
+        .status(400)
+        .json({ message: "Initiater ID is not provided." });
+    }
 
-     // Validate input
-     if (!bookId) {
-       return res.status(400).json({ message: "Book ID is not provided." });
-     }
-     if (!userId) {
-       return res.status(400).json({ message: "User ID is not provided." });
-     }
-     if (!clientUserId) {
-       return res
-         .status(400)
-         .json({ message: "Client User ID is not provided." });
-     }
-     if (!transactionType) {
-       return res
-         .status(400)
-         .json({ message: "Transaction type is not provided." });
-     }
-     if (!amount) {
-       return res.status(400).json({ message: "Amount is not provided." });
-     }
-     if (!initiatedBy) {
-       return res
-         .status(400)
-         .json({ message: "Initiated By is not provided." });
-     }
-     if (!initiaterId) {
-       return res
-         .status(400)
-         .json({ message: "Initiater ID is not provided." });
-     }
+    // Parse amount to a number if it's a string
+    let parsedAmount =
+      typeof amount === "string" ? parseFloat(amount) : amount;
 
-     // Parse amount to a number if it's a string
-     let parsedAmount =
-       typeof amount === "string" ? parseFloat(amount) : amount;
+    // Validate the amount
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({
+        message: "Amount must be a positive number.",
+      });
+    }
 
-     // Validate the amount
-     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-       return res.status(400).json({
-         message: "Amount must be a positive number.",
-       });
-     }
+    // Update the `amount` variable to use the parsed value
+    req.body.amount = parsedAmount;
 
-     // Update the `amount` variable to use the parsed value
-     req.body.amount = parsedAmount;
+    if (!["you will get", "you will give"].includes(transactionType)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid transaction type provided." });
+    }
 
-     if (!["you will get", "you will give"].includes(transactionType)) {
-       return res
-         .status(400)
-         .json({ message: "Invalid transaction type provided." });
-     }
+    // Handle file uploads
+    let mediaFile = null;
+    if (req.file) {
+      mediaFile = req.file.path; // Save the path of the uploaded file
+    }
 
-     // Handle file uploads
-     let mediaFile = null;
-     if (req.file) {
-       mediaFile = req.file.path; // Save the path of the uploaded file
-     }
+    // Check if a transaction already exists for the same client, book, and user
+    let existingTransaction = await Transaction.findOne({
+      bookId,
+      userId,
+      clientUserId,
+    });
 
-     // Check if a transaction already exists for the same client, book, and user
-     let existingTransaction = await Transaction.findOne({
-       bookId,
-       userId,
-       clientUserId,
-     });
+    let transaction;
+    if (existingTransaction) {
+      // Update transaction history
+      existingTransaction.transactionHistory.push({
+        transactionType,
+        amount,
+        description,
+        initiatedBy,
+        initiaterId,
+        transactionDate: new Date(),
+        outstandingBalance: existingTransaction.outstandingBalance,
+        confirmationStatus: "pending",
+        file: mediaFile,
+      });
 
-     let transaction;
-     if (existingTransaction) {
-       // Update transaction history
-       existingTransaction.transactionHistory.push({
-         transactionType,
-         amount,
-         description,
-         initiatedBy,
-         initiaterId,
-         transactionDate: new Date(),
-         outstandingBalance: existingTransaction.outstandingBalance, // Keep outstanding balance unchanged until confirmation
-         confirmationStatus: "pending",
-         file: mediaFile, // Add media file to history if uploaded
-       });
+      // Save the updated transaction
+      transaction = await existingTransaction.save();
 
-       // Save the updated transaction
-       transaction = await existingTransaction.save();
+      // Send notification for existing transaction update
+      await notificationController.createNotification({
+        recipient: clientUserId,
+        sender: userId,
+        type: 'TRANSACTION',
+        title: 'Transaction Entry Added',
+        message: `${initiatedBy} added a new transaction entry of ${amount} (${transactionType})`,
+        relatedId: transaction._id,
+        onModel: 'Transaction',
+        actionType: 'updated'
+      });
 
-       res.status(200).json({
-         message: "Transaction  Added successfully.",
-         transaction,
-       });
-     } else {
-       // Create a new transaction
-       const newTransaction = new Transaction({
-         bookId,
-         userId,
-         clientUserId,
-         transactionType,
-         initiatedBy,
-         initiaterId,
-         transactionHistory: [
-           {
-             transactionType,
-             amount,
-             description,
-             initiatedBy: req.user.name,
-             initiaterId: req.user.id,
-             transactionDate: new Date(),
-             outstandingBalance: 0, // Initially 0 until confirmation
-             confirmationStatus: "pending",
-             file: mediaFile, // Add media file to the first transaction
-           },
-         ],
-         outstandingBalance: 0, // Initialize to 0 until confirmation
-       });
+      res.status(200).json({
+        message: "Transaction Added successfully.",
+        transaction,
+      });
+    } else {
+      // Create a new transaction
+      transaction = await Transaction.create({
+        bookId,
+        userId,
+        clientUserId,
+        transactionHistory: [
+          {
+            transactionType,
+            amount,
+            description,
+            initiatedBy,
+            initiaterId,
+            transactionDate: new Date(),
+            outstandingBalance: 0,
+            confirmationStatus: "pending",
+            file: mediaFile,
+          },
+        ],
+        outstandingBalance: 0,
+      });
 
-       // Save the new transaction
-       transaction = await newTransaction.save();
+      // Add debug logs before creating notification
+      console.log('Creating notification for new transaction:', {
+        recipient: clientUserId,
+        sender: userId,
+        type: 'TRANSACTION',
+        title: 'New Transaction Created',
+        message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
+        relatedId: transaction._id,
+        onModel: 'Transaction',
+        actionType: 'created'
+      });
 
-       res.status(201).json({
-         message: "Transaction created successfully.",
-         transaction,
-       });
-     }
+      try {
+        await notificationController.createNotification({
+          recipient: clientUserId,
+          sender: userId,
+          type: 'TRANSACTION',
+          title: 'New Transaction Created',
+          message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
+          relatedId: transaction._id,
+          onModel: 'Transaction',
+          actionType: 'created'
+        });
+        console.log('Notification created successfully');
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Don't throw error as this is a secondary operation
+      }
 
-     // Fetch the client's email and phone number from the Client model
-     const client = await Client.findById(clientUserId); // Assuming clientUserId is the client's unique ID
+      res.status(201).json({
+        message: "Transaction created successfully.",
+        transaction,
+      });
+    }
 
-     if (!client) {
-       return res.status(404).json({
-         message: "Client not found",
-       });
-     }
+    // Fetch client details for email/SMS notification if needed
+    const client = await Client.findById(clientUserId);
+    if (client) {
+      // Send email/SMS notification using notificationapi
+      const notificationData = {
+        notificationId: "apnakhata_63_07",
+        user: {
+          id: clientUserId,
+          email: client.email,
+          number: client.mobile,
+        },
+        mergeTags: {
+          transactionType,
+          amount: amount,
+          description,
+          initiatedBy,
+          date: new Date().toLocaleDateString(),
+        },
+      };
 
-     // Trigger notification
-     const notificationData = {
-       notificationId: "apnakhata_63_07",
-       user: {
-         id: clientUserId, // User ID or unique identifier
-         email: client.email, // Provide the client's email from the client model
-         number: client.mobile, // Provide the client's phone number from the client model
-       },
-       mergeTags: {
-         transactionType,
-         amount: amount,
-         description,
-         initiatedBy,
-         date: new Date().toLocaleDateString(),
-       },
-     };
+      try {
+        await notificationapi.send(notificationData);
+      } catch (notifyError) {
+        console.error("Error sending email/SMS notification:", notifyError);
+        // Don't throw error as this is a secondary notification
+      }
+    }
 
-     try {
-       await notificationapi.send(notificationData);
-      //  console.log("Notification sent successfully!");
-     } catch (notifyError) {
-    console.error("Error sending notification:", notifyError);
-     }
-   } catch (error) {
-    console.error(error); // Log the error for debugging
-     res.status(500).json({ error: error.message });
-   }
- };
+  } catch (error) {
+    console.error("Error in createTransaction:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Error creating transaction.",
+      error: error.message 
+    });
+  }
+};
 
- 
-
-//  Confirm a pending transaction
+// Confirm a pending transaction
 const confirmTransaction = async (req, res) => {
   try {
     const { transactionId, entryId } = req.params;
@@ -292,6 +325,18 @@ const confirmTransaction = async (req, res) => {
     // Save the updated transaction
     await transaction.save();
 
+    // After transaction is successfully confirmed
+    await notificationController.createNotification({
+      recipient: transaction.userId, // Notify the transaction creator
+      sender: req.user.id,
+      type: 'TRANSACTION',
+      title: 'Transaction Confirmed',
+      message: `${req.user.name} confirmed the transaction of ${pendingEntry.amount}`,
+      relatedId: transaction._id,
+      onModel: 'Transaction',
+      actionType: 'updated'
+    });
+
     res
       .status(200)
       .json({ message: "Transaction entry confirmed.", transaction });
@@ -299,6 +344,7 @@ const confirmTransaction = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // Get a single transaction by ID
 const getTransactionById = async (req, res) => {
   try {
@@ -329,6 +375,7 @@ const getTransactionById = async (req, res) => {
     });
   }
 };
+
 // Add an existing transaction to the transaction history
  
 const addExistingTransaction = async (req, res) => {
@@ -356,7 +403,10 @@ const addExistingTransaction = async (req, res) => {
     }
 
     // Find the transaction document by ID
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transaction.findById(transactionId)
+    .populate('userId', 'name email') // Populate user with name and email
+    .populate(['clientUserId', 'bookId']);  // Populate clientUser with name, email, and phone
+ 
 
     if (!transaction) {
       return res.status(404).json({
@@ -400,6 +450,18 @@ const addExistingTransaction = async (req, res) => {
 
     // Save the updated transaction document
     const updatedTransaction = await transaction.save();
+
+    // After successfully adding to transaction history
+    await notificationController.createNotification({
+      recipient: transaction.clientUserId,
+      sender: userId,
+      type: 'TRANSACTION',
+      title: 'Transaction Entry Added',
+      message: `${initiatedBy} added a new entry of ${amount} (${transactionType})`,
+      relatedId: transaction._id,
+      onModel: 'Transaction',
+      actionType: 'updated'
+    });
 
     // Send the updated transaction back in the response
     res.status(200).json({
@@ -494,48 +556,27 @@ const updateTransaction = async (req, res) => {
     // Save the updated transaction
     await transaction.save();
 
+    // After transaction is successfully updated
+    await notificationController.createNotification({
+      recipient: transaction.clientUserId,
+      sender: userId,
+      type: 'TRANSACTION',
+      title: 'Transaction Updated',
+      message: `${req.user.name} updated a transaction of ${amount} (${transactionType})`,
+      relatedId: transaction._id,
+      onModel: 'Transaction',
+      actionType: 'updated'
+    });
+
     res.status(200).json({
       message: "Transaction updated successfully.",
       transaction,
     });
-
-    // Send notification to the client about the update
-    const client = await Client.findById(transaction.clientUserId);
-    if (!client) {
-      return res.status(404).json({ message: "Client not found." });
-    }
-
-    const notificationData = {
-      notificationId: "apnakhata_63_07", // Update notification ID if necessary
-      user: {
-        id: transaction.clientUserId,
-        email: client.email,
-        number: client.mobile,
-      },
-      mergeTags: {
-        transactionType: entry.transactionType,
-        amount: entry.amount.toFixed(2),
-        description: entry.description,
-        initiatedBy: entry.initiatedBy,
-        date: new Date().toLocaleDateString(),
-      },
-    };
-
-    try {
-      await notificationapi.send(notificationData);
-      // console.log("Update notification sent successfully!");
-    } catch (notifyError) {
-      console.error("Error sending update notification:", notifyError);
-    }
   } catch (error) {
     console.error("Error updating transaction:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
 
 const deleteTransactionEntry = async (req, res) => {
   try {
@@ -583,6 +624,18 @@ const deleteTransactionEntry = async (req, res) => {
     // Save the updated transaction
     await transaction.save();
 
+    // After successfully deleting the entry
+    await notificationController.createNotification({
+      recipient: transaction.clientUserId,
+      sender: userId,
+      type: 'TRANSACTION',
+      title: 'Transaction Entry Deleted',
+      message: `${req.user.name} deleted a transaction entry`,
+      relatedId: transaction._id,
+      onModel: 'Transaction',
+      actionType: 'deleted'
+    });
+
     res.status(200).json({
       message: "Transaction entry deleted successfully.",
       transaction,
@@ -592,7 +645,6 @@ const deleteTransactionEntry = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 module.exports = {
   getTransactions,

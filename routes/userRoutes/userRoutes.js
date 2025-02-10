@@ -5,10 +5,10 @@ const {
   updateProfile,
   getUserProfile,
 } = require("../../controllers/userController/userAuthController");
+const { authenticate } = require('../../middleware/authMiddleware');
+const{ uploadProfilePicture } = require("../../middleware/uploadImageMiddleware")
 
 const router = express.Router();
-const authenticate = require("../../middleware/authMiddleware")
-const{ uploadProfilePicture } = require("../../middleware/uploadImageMiddleware")
 
 // Route for user signup
 router.post("/signup", uploadProfilePicture.single("profilePicture"), signup);
