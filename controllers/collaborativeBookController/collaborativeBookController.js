@@ -202,16 +202,16 @@ const createTransaction = async (req, res) => {
       });
 
       // Add debug logs before creating notification
-      console.log('Creating notification for new transaction:', {
-        recipient: clientUserId,
-        sender: userId,
-        type: 'TRANSACTION',
-        title: 'New Transaction Created',
-        message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
-        relatedId: transaction._id,
-        onModel: 'Transaction',
-        actionType: 'created'
-      });
+      // console.log('Creating notification for new transaction:', {
+      //   recipient: clientUserId,
+      //   sender: userId,
+      //   type: 'TRANSACTION',
+      //   title: 'New Transaction Created',
+      //   message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
+      //   relatedId: transaction._id,
+      //   onModel: 'Transaction',
+      //   actionType: 'created'
+      // });
 
       try {
         await notificationController.createNotification({
@@ -241,7 +241,7 @@ const createTransaction = async (req, res) => {
     if (client) {
       // Send email/SMS notification using notificationapi
       const notificationData = {
-        notificationId: "apnakhata_63_07",
+        notificationId: process.env.NOTIFICATION_API_KEY,
         user: {
           id: clientUserId,
           email: client.email,
@@ -274,39 +274,53 @@ const createTransaction = async (req, res) => {
   }
 };
 
-// Confirm a pending transaction
 const confirmTransaction = async (req, res) => {
   try {
+    // console.log("Authenticated User in confirmTransaction:", req.user);
+    
+    // Ensure req.user is available
+    if (!req.user) {
+      console.error("Error: req.user is undefined inside confirmTransaction.");
+      return res.status(401).json({ message: "Unauthorized. User not authenticated." });
+    }
+
+    if (!req.user.id) {
+      console.error("Error: req.user.id is undefined inside confirmTransaction.");
+      return res.status(400).json({ message: "User ID is missing from request." });
+    }
+
     const { transactionId, entryId } = req.params;
-    console.log(req.params);
-    const transaction = await Transaction.findById(transactionId);
+    // console.log("Incoming Request Params:", { transactionId, entryId });
+
+    const transaction = await Transaction.findById(transactionId)
+      .populate("userId", "name email")
+      .populate("clientUserId", "name email");
+
     if (!transaction) {
+      console.error(`Error: Transaction with ID ${transactionId} not found.`);
       return res.status(404).json({ message: "Transaction not found." });
     }
 
-    // Find the specific entry in the transactionHistory by entryId
+    // console.log("Fetched Transaction:", transaction);
+
     const entryIndex = transaction.transactionHistory.findIndex(
       (entry) => entry._id.toString() === entryId
     );
 
     if (entryIndex === -1) {
+      console.error(`Error: Transaction entry with ID ${entryId} not found.`);
       return res.status(404).json({ message: "Transaction entry not found." });
     }
 
-    // Get the specific pending entry
     const pendingEntry = transaction.transactionHistory[entryIndex];
 
-    // Check if the entry is pending
     if (pendingEntry.confirmationStatus !== "pending") {
-      return res.status(400).json({
-        message: "This transaction entry has already been confirmed.",
-      });
+      console.warn("Warning: This transaction entry has already been confirmed.");
+      return res.status(400).json({ message: "This transaction entry has already been confirmed." });
     }
 
-    // Mark this entry as confirmed
     pendingEntry.confirmationStatus = "confirmed";
 
-    // Recalculate the outstanding balance based on all confirmed entries
     let newOutstandingBalance = 0;
 
     transaction.transactionHistory.forEach((entry) => {
@@ -319,31 +333,63 @@ const confirmTransaction = async (req, res) => {
       }
     });
 
-    // Update the overall outstanding balance
     transaction.outstandingBalance = newOutstandingBalance;
-
-    // Save the updated transaction
     await transaction.save();
 
-    // After transaction is successfully confirmed
-    await notificationController.createNotification({
-      recipient: transaction.userId, // Notify the transaction creator
-      sender: req.user.id,
-      type: 'TRANSACTION',
-      title: 'Transaction Confirmed',
-      message: `${req.user.name} confirmed the transaction of ${pendingEntry.amount}`,
+    // Ensure userId and clientUserId exist
+    if (!transaction.userId || !transaction.clientUserId) {
+      console.error("Error: Either transaction.userId or transaction.clientUserId is missing.");
+      return res.status(500).json({ message: "Transaction data is incomplete." });
+    }
+
+    // console.log("Transaction Users:", {
+    //   userId: transaction.userId._id,
+    //   clientUserId: transaction.clientUserId._id,
+    // });
+
+    // Determine sender
+    const sender = await User.findById(req.user.id);
+    if (!sender) {
+      console.error(`Error: Sender User with ID ${req.user.id} not found.`);
+      return res.status(404).json({ message: "Sender not found in User model." });
+    }
+
+    // Determine recipient (opposite party)
+    const recipient =
+      sender._id.toString() === transaction.userId._id.toString()
+        ? transaction.clientUserId
+        : transaction.userId;
+
+    if (!recipient || !recipient.email) {
+      console.error("Error: Recipient User not found or missing email:", recipient);
+      return res.status(404).json({ message: "Recipient not found in User model." });
+    }
+
+    // console.log("Final Sender:", sender._id, sender.email);
+    // console.log("Final Recipient:", recipient._id, recipient.email);
+
+    // Send Notification
+    await notificationController.clientCreateNotification({
+      recipient: recipient._id,
+      sender: sender._id,
+      type: "TRANSACTION",
+      title: "Transaction Confirmed",
+      message: `${sender.name} confirmed the transaction of ${pendingEntry.amount}`,
       relatedId: transaction._id,
-      onModel: 'Transaction',
-      actionType: 'updated'
+      onModel: "Transaction",
+      actionType: "updated",
     });
 
-    res
-      .status(200)
-      .json({ message: "Transaction entry confirmed.", transaction });
+    res.status(200).json({
+      message: "Transaction entry confirmed.",
+      transaction,
+    });
   } catch (error) {
+    console.error("Error in confirmTransaction function:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Get a single transaction by ID
 const getTransactionById = async (req, res) => {
@@ -405,7 +451,8 @@ const addExistingTransaction = async (req, res) => {
     // Find the transaction document by ID
     const transaction = await Transaction.findById(transactionId)
     .populate('userId', 'name email') // Populate user with name and email
-    .populate(['clientUserId', 'bookId']);  // Populate clientUser with name, email, and phone
+    .populate('clientUserId', 'name email')
+    .populate('bookId');  // Populate clientUser with name, email, and phone
  
 
     if (!transaction) {
@@ -414,6 +461,10 @@ const addExistingTransaction = async (req, res) => {
         message: "Transaction not found",
       });
     }
+    // console.log("Transaction Found:", transaction);
+    // console.log("Logged-in User ID:", userId);
+    // console.log("Transaction User Email:", transaction.userId?.email);
+    // console.log("Transaction ClientUser Email:", transaction.clientUserId?.email);
 
     const lastOutstandingBalance = transaction.outstandingBalance;
 
@@ -422,7 +473,33 @@ const addExistingTransaction = async (req, res) => {
     if (req.file) {
       mediaFile = req.file.path; // Save the file path from the uploaded file
     }
+// Find the correct sender using email
+let sender = await User.findOne({ email: req.user.email });
+if (!sender) {
+console.error("Sender User not found for email:", req.user.email);
+return res.status(404).json({
+success: false,
+message: "Sender not found in User model",
+});
+}
 
+// Find the correct recipient (opposite party)
+let recipientEmail = (req.user.email === transaction.userId?.email)
+? transaction.clientUserId?.email
+: transaction.userId?.email;
+
+let recipient = await User.findOne({ email: recipientEmail });
+if (!recipient) {
+console.error("Recipient User not found for email:", recipientEmail);
+return res.status(404).json({
+success: false,
+message: "Recipient not found in User model",
+});
+}
+
+// Debugging logs
+// console.log("Final Sender:", sender._id, sender.email);
+// console.log("Final Recipient:", recipient._id, recipient.email);
     // Prepare the new transaction entry
     const newTransaction = {
       transactionType,
@@ -450,18 +527,50 @@ const addExistingTransaction = async (req, res) => {
 
     // Save the updated transaction document
     const updatedTransaction = await transaction.save();
-
+    
     // After successfully adding to transaction history
-    await notificationController.createNotification({
-      recipient: transaction.clientUserId,
-      sender: userId,
+    await notificationController.clientCreateNotification({
+      recipient: recipient._id,
+      sender: sender._id,
       type: 'TRANSACTION',
       title: 'Transaction Entry Added',
       message: `${initiatedBy} added a new entry of ${amount} (${transactionType})`,
       relatedId: transaction._id,
       onModel: 'Transaction',
-      actionType: 'updated'
-    });
+      actionType: 'created'
+      });
+      
+
+          // Fetch client details for email/SMS notification
+    const client = await Client.findOne({email: recipientEmail});
+    // console.log("Client ID:", client);
+    if (client) {
+      // Prepare the email/SMS notification payload
+
+      const notificationData = {
+        notificationId: process.env.NOTIFICATION_API_KEY,
+        user: {
+          id: client._id,
+          email: recipientEmail,
+          number: client.mobile,
+        },
+        mergeTags: {
+          transactionType,
+          amount: amount,
+          description,
+          initiatedBy,
+          date: new Date().toLocaleDateString(),
+        },
+      };
+
+      // Send the email/SMS notification
+      try {
+        await notificationapi.send(notificationData);
+        console.log("Email/SMS notification sent successfully");
+      } catch (notifyError) {
+        console.error("Error sending email/SMS notification:", notifyError);
+      }
+    }
 
     // Send the updated transaction back in the response
     res.status(200).json({
@@ -484,10 +593,9 @@ const addExistingTransaction = async (req, res) => {
 
 const updateTransaction = async (req, res) => {
   try {
-    const { transactionId, entryId } = req.params; // Transaction and entry IDs from URL params
-    const { amount, description, transactionType } = req.body; // Fields to update
-
-    const userId = req.user.id; // Get the user ID from the authenticated user
+    const { transactionId, entryId } = req.params;
+    const { amount, description, transactionType } = req.body;
+    const userId = req.user.id;
 
     if (!transactionId || !entryId) {
       return res.status(400).json({ message: "Missing required transaction IDs." });
@@ -505,7 +613,10 @@ const updateTransaction = async (req, res) => {
       return res.status(400).json({ message: "Invalid transaction type provided." });
     }
 
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transaction.findById(transactionId)
+      .populate('userId', 'name email')
+      .populate('clientUserId', 'name email');
+
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found." });
     }
@@ -521,30 +632,27 @@ const updateTransaction = async (req, res) => {
       });
     }
 
-    let mediaFile = entry.file; // Retain the existing file if no new file is uploaded
+    let mediaFile = entry.file;
     if (req.file) {
-      mediaFile = req.file.path; // Update the file path with the newly uploaded file
+      mediaFile = req.file.path;
     }
 
-    // Adjust outstanding balance for entries transitioning from confirmed to pending
     if (entry.confirmationStatus === "confirmed") {
       if (entry.transactionType === "you will get") {
-        transaction.outstandingBalance -= entry.amount; // Remove the amount from the balance
+        transaction.outstandingBalance -= entry.amount;
       } else if (entry.transactionType === "you will give") {
-        transaction.outstandingBalance += entry.amount; // Add the amount to the balance
+        transaction.outstandingBalance += entry.amount;
       }
-      entry.confirmationStatus = "pending"; // Change status to pending
+      entry.confirmationStatus = "pending";
     }
 
-    // Update the fields
     if (amount !== undefined) entry.amount = amount;
     if (description !== undefined) entry.description = description;
     if (transactionType !== undefined) entry.transactionType = transactionType;
 
-    entry.transactionDate = new Date(); // Update transaction date to reflect changes
-    entry.file = mediaFile; // Update the file path in the entry
+    entry.transactionDate = new Date();
+    entry.file = mediaFile;
 
-    // Recalculate outstanding balance for the entire transaction history
     let updatedBalance = 0;
     transaction.transactionHistory.forEach((txn) => {
       if (txn.confirmationStatus === "confirmed") {
@@ -553,16 +661,35 @@ const updateTransaction = async (req, res) => {
     });
     transaction.outstandingBalance = updatedBalance;
 
-    // Save the updated transaction
     await transaction.save();
 
-    // After transaction is successfully updated
-    await notificationController.createNotification({
-      recipient: transaction.clientUserId,
-      sender: userId,
+    // Find the correct sender
+    let sender = await User.findOne({ email: req.user.email });
+    if (!sender) {
+      console.error("Sender User not found for email:", req.user.email);
+      return res.status(404).json({ message: "Sender not found in User model." });
+    }
+
+    // Find the recipient (opposite party)
+    let recipientEmail = (req.user.email === transaction.userId?.email)
+      ? transaction.clientUserId?.email
+      : transaction.userId?.email;
+
+    let recipient = await User.findOne({ email: recipientEmail });
+    if (!recipient) {
+      console.error("Recipient User not found for email:", recipientEmail);
+      return res.status(404).json({ message: "Recipient not found in User model." });
+    }
+
+    // console.log("Final Sender:", sender._id, sender.email);
+    // console.log("Final Recipient:", recipient._id, recipient.email);
+
+    await notificationController.clientCreateNotification({
+      recipient: recipient._id,
+      sender: sender._id,
       type: 'TRANSACTION',
       title: 'Transaction Updated',
-      message: `${req.user.name} updated a transaction of ${amount} (${transactionType})`,
+      message: `${req.user.name} updated a transaction of ${amount}`,
       relatedId: transaction._id,
       onModel: 'Transaction',
       actionType: 'updated'
@@ -578,19 +705,22 @@ const updateTransaction = async (req, res) => {
   }
 };
 
+
 const deleteTransactionEntry = async (req, res) => {
   try {
     const { transactionId, entryId } = req.params;
-    const userId = req.user.id; // Get the authenticated user ID
+    const userId = req.user.id; // Authenticated user ID
 
     // Find the transaction by ID
-    const transaction = await Transaction.findById(transactionId);
+    const transaction = await Transaction.findById(transactionId)
+      .populate('userId', 'name email')
+      .populate('clientUserId', 'name email');
 
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found." });
     }
 
-    // Check if the entry exists in the transaction history
+    // Find the transaction entry index
     const entryIndex = transaction.transactionHistory.findIndex(
       (entry) => entry._id.toString() === entryId
     );
@@ -612,7 +742,6 @@ const deleteTransactionEntry = async (req, res) => {
 
     // Update the outstanding balance
     if (removedEntry.confirmationStatus === "confirmed") {
-      // If the removed entry was confirmed, adjust the outstanding balance
       const adjustment =
         removedEntry.transactionType === "you will get"
           ? -removedEntry.amount // Decrease balance if it was "you will get"
@@ -624,10 +753,31 @@ const deleteTransactionEntry = async (req, res) => {
     // Save the updated transaction
     await transaction.save();
 
-    // After successfully deleting the entry
-    await notificationController.createNotification({
-      recipient: transaction.clientUserId,
-      sender: userId,
+    // Find the correct sender (logged-in user)
+    let sender = await User.findOne({ email: req.user.email });
+    if (!sender) {
+      console.error("Sender User not found for email:", req.user.email);
+      return res.status(404).json({ message: "Sender not found in User model." });
+    }
+
+    // Find the correct recipient (opposite party)
+    let recipientEmail = (req.user.email === transaction.userId?.email)
+      ? transaction.clientUserId?.email
+      : transaction.userId?.email;
+
+    let recipient = await User.findOne({ email: recipientEmail });
+    if (!recipient) {
+      console.error("Recipient User not found for email:", recipientEmail);
+      return res.status(404).json({ message: "Recipient not found in User model." });
+    }
+
+    // console.log("Final Sender:", sender._id, sender.email);
+    // console.log("Final Recipient:", recipient._id, recipient.email);
+
+    // Send notification to the opposite party
+    await notificationController.clientCreateNotification({
+      recipient: recipient._id,
+      sender: sender._id,
       type: 'TRANSACTION',
       title: 'Transaction Entry Deleted',
       message: `${req.user.name} deleted a transaction entry`,
@@ -645,6 +795,7 @@ const deleteTransactionEntry = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 module.exports = {
   getTransactions,

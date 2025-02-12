@@ -20,7 +20,7 @@ const authenticate = (req, res, next) => {
     req.user = decoded;
     req.userId = decoded.id; // Set userId on the request
     req.userEmail = decoded.email; // Set userEmail on the request
-    
+    // console.log('Authenticated user from middleware:', req.user);
     
     next();
   } catch (error) {
