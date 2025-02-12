@@ -26,9 +26,9 @@ router.get("/transactions", authenticate, getTransactions);
 router.get("/client-transactions", authenticate, getTransactionstoclient);
 router.get("/single-transaction/:id", authenticate, getTransactionById);
 // Route to confirm a pending transaction
-router.patch("/transactions/:id/confirm", confirmTransaction);
+router.patch("/transactions/:id/confirm", authenticate, confirmTransaction);
 router.patch(
-  "/transactions/:transactionId/entries/:entryId/confirm",
+  "/transactions/:transactionId/entries/:entryId/confirm",authenticate,
   confirmTransaction
 );
 router.patch(

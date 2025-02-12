@@ -2,6 +2,7 @@ const Notification = require('../models/notificationModel');
 const User = require('../models/userModel/userModel');
 const ClientUser = require('../models/clientUserModel/clientUserModel');
 const socketService = require('../services/socketService');
+const Transaction = require('../models/transactionModel/transactionModel');
 const mongoose = require('mongoose');
 
 const getNotifications = async (req, res) => {
@@ -38,6 +39,7 @@ const swapTransactionMessage = (message) => {
   return message;
 };
 
+
 const createNotification = async (notificationData) => {
   try {
     // Get sender (user) details
@@ -52,7 +54,11 @@ const createNotification = async (notificationData) => {
       throw new Error('Recipient not found');
     }
 
-    // Swap "will get" with "will give" in the message
+
+
+    
+
+
     const swappedMessage = swapTransactionMessage(notificationData.message);
     console.log('Original message:', notificationData.message);
     console.log('Swapped message:', swappedMessage);
@@ -223,16 +229,94 @@ const clearReadNotifications = async (req, res) => {
   }
 };
 
+
+const clientCreateNotification = async (notificationData) => {
+  try {
+    // Get sender details (who initiated the transaction)
+    const sender = await User.findById(notificationData.sender);
+    if (!sender) {
+      throw new Error('Sender not found');
+    }
+
+    // Retrieve transaction details to determine the correct recipient
+    const transaction = await Transaction.findById(notificationData.relatedId)
+      .populate('userId', 'name email') // Main user (original creator of the book)
+      .populate('clientUserId', 'name email'); // Client user (secondary party)
+
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    let recipient;
+
+    if (String(sender._id) === String(transaction.userId._id)) {
+      // If sender is the original user (Hardeep Singh), notify clientUser (Pranjal Tiwari)
+      recipient = transaction.clientUserId;
+    } else {
+      // If sender is the client user (Pranjal Tiwari), notify the original user (Hardeep Singh)
+      recipient = transaction.userId;
+    }
+
+    if (!recipient) {
+      throw new Error('Recipient not found');
+    }
+
+    // Prevent self-notifications
+    if (String(sender._id) === String(recipient._id)) {
+      console.log('Skipping notification: Sender and recipient are the same.');
+      return;
+    }
+
+  
+
+    // Create notification
+    const notification = await Notification.create({
+      recipient: recipient._id,
+      recipientEmail: recipient.email,
+      sender: sender._id,
+      senderEmail: sender.email,
+      type: notificationData.type,
+      title: notificationData.title,
+      message: notificationData.message,
+      relatedId: notificationData.relatedId,
+      relatedModel: notificationData.onModel,
+      relatedAction: notificationData.actionType || 'created',
+    });
+
+    // Populate the notification for socket emission
+    const populatedNotification = await Notification.findById(notification._id)
+      .populate('sender', 'name email')
+      .populate('recipient', 'name email businessName');
+
+    console.log('Created notification:', {
+      id: notification._id,
+      recipientEmail: notification.recipientEmail,
+      senderEmail: notification.senderEmail,
+      message: notification.message,
+    });
+
+    // Emit socket event using recipient's email
+    const io = socketService.getIO();
+    io.to(`client_${notification.recipientEmail}`).emit('newNotification', populatedNotification);
+
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
+};
+
 // Export all functions
 module.exports = {
   getNotifications,
   markAsRead,
   markAllAsRead,
   createNotification,
+  clientCreateNotification,
   sendNotification,
   clearAllNotifications,
   clearReadNotifications
 };
 
 // Add console.log to verify exports
-console.log('Exporting notification controller:', module.exports);
+// console.log('Exporting notification controller:', module.exports);
