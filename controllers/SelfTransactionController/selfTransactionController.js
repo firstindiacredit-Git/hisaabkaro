@@ -125,12 +125,12 @@ exports.getTransactions = async (req, res) => {
     const { userId } = req.params;
     const transactions = await Transaction.find({ userId });
 
-    if (!transactions.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No transactions found for this user",
-      });
-    }
+    // if (!transactions.length) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "No transactions found for this user",
+    //   });
+    // }
 
     res.status(200).json({
       success: true,

@@ -6,7 +6,9 @@ const {
   markAllAsRead,
   sendNotification,
   clearAllNotifications,
-  clearReadNotifications
+  clearReadNotifications,
+  saveToken,
+  sendNotificationToAll
 } = require('../controllers/notificationController');
 const { protect } = require('../middleware/authMiddleware');
 const Notification = require('../models/notificationModel');
@@ -107,5 +109,14 @@ router.post('/send', protect, async (req, res) => {
 // Add these new routes
 router.delete('/clear-all', protect, clearAllNotifications);
 router.delete('/clear-read', protect, clearReadNotifications);
+
+// Save FCM token
+router.post("/api/save-token", saveToken);
+
+// Send notification to specific token
+router.post("/send", sendNotification);
+
+// Send notification to all tokens
+router.post("/send-all", sendNotificationToAll);
 
 module.exports = router;

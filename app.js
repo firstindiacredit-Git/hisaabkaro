@@ -3,6 +3,7 @@ const path = require('path');
 const http = require('http');
 const { initializeWebSocket } = require('./controllers/notificationController/notificationController');
 const notificationRoutes = require('./routes/notificationRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ app.get('/uploads/*.pdf', (req, res) => {
 
 // API routes
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/v3/invoices', invoiceRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
