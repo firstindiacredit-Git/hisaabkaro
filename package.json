@@ -20,6 +20,7 @@
     "ejs": "^3.1.10",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
+    "firebase-admin": "^13.1.0",
     "json": "^11.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.2",

@@ -5,6 +5,8 @@ const notificationapi = require("notificationapi-node-server-sdk").default;
 const upload = require("../../middleware/uploadMiddleware"); // Multer middleware for file uploads
 const notificationController = require('../notificationController');
 const axios = require('axios');
+const admin = require("../../firebase-admin");
+const Token = require("../../models/tokenModel/Token");
 
 require("dotenv").config();
 
@@ -26,9 +28,6 @@ const getTransactions = async (req, res) => {
       .populate("clientUserId bookId") // Populate related user, client, and book details
       .lean({ virtuals: true }); // Include virtual fields like `visibleTransactionType`
 
-    if (transactions.length === 0) {
-      return res.status(404).json({ message: "No transactions found." });
-    }
 
     res.status(200).json({ transactions });
   } catch (error) {
@@ -264,8 +263,38 @@ const createTransaction = async (req, res) => {
       }
     }
 
+    console.log('Creating transaction:', {
+      clientEmail: client.email,
+      initiatedBy,
+      amount,
+      transactionId: transaction._id
+    });
+
+    // Send FCM notification
+    const fcmResponse = await sendFCMNotification(
+      client.email,
+      "New Transaction Added",
+      `${initiatedBy} has added a new transaction of ${amount}`,
+      {
+        transactionId: transaction._id,
+        type: "new_transaction",
+        amount: amount.toString(),
+        initiatedBy
+      }
+    );
+
+    console.log('Transaction creation complete:', {
+      success: true,
+      fcmStatus: fcmResponse ? 'sent' : 'failed',
+      transactionId: transaction._id
+    });
+
   } catch (error) {
-    console.error("Error in createTransaction:", error);
+    console.error('❌ Error in createTransaction:', {
+      error: error.message,
+      stack: error.stack,
+      requestBody: req.body
+    });
     res.status(500).json({ 
       success: false,
       message: "Error creating transaction.",
@@ -572,6 +601,32 @@ message: "Recipient not found in User model",
       }
     }
 
+    console.log('Adding transaction entry:', {
+      recipientEmail,
+      initiatedBy,
+      amount,
+      transactionId: transaction._id
+    });
+
+    // Send FCM notification
+    const fcmResponse = await sendFCMNotification(
+      recipientEmail,
+      "Transaction Entry Added",
+      `${initiatedBy} has added a new entry of ${amount}`,
+      {
+        transactionId: transaction._id,
+        type: "new_transaction",
+        amount: amount.toString(),
+        initiatedBy
+      }
+    );
+
+    console.log('Transaction entry addition complete:', {
+      success: true,
+      fcmStatus: fcmResponse ? 'sent' : 'failed',
+      transactionId: transaction._id
+    });
+
     // Send the updated transaction back in the response
     res.status(200).json({
       success: true,
@@ -579,7 +634,12 @@ message: "Recipient not found in User model",
       transaction: updatedTransaction,
     });
   } catch (error) {
-    console.error("Error adding transaction:", error);
+    console.error('❌ Error adding transaction:', {
+      error: error.message,
+      stack: error.stack,
+      requestBody: req.body,
+      transactionId: req.params.transactionId
+    });
 
     // Handle any unexpected errors
     res.status(500).json({
@@ -695,6 +755,17 @@ const updateTransaction = async (req, res) => {
       actionType: 'updated'
     });
 
+    // Send FCM notification
+    await sendFCMNotification(
+      recipientEmail,
+      "Transaction Updated",
+      `${sender.name} has updated a transaction`,
+      {
+        transactionId: transaction._id,
+        type: "update_transaction"
+      }
+    );
+
     res.status(200).json({
       message: "Transaction updated successfully.",
       transaction,
@@ -786,6 +857,17 @@ const deleteTransactionEntry = async (req, res) => {
       actionType: 'deleted'
     });
 
+    // Send FCM notification
+    await sendFCMNotification(
+      recipientEmail,
+      "Transaction Deleted",
+      `${sender.name} has deleted a transaction`,
+      {
+        transactionId: transaction._id,
+        type: "delete_transaction"
+      }
+    );
+
     res.status(200).json({
       message: "Transaction entry deleted successfully.",
       transaction,
@@ -796,6 +878,88 @@ const deleteTransactionEntry = async (req, res) => {
   }
 };
 
+// Helper function to send FCM notification
+const sendFCMNotification = async (userEmail, title, body, data = {}) => {
+  try {
+    console.log('Attempting to send FCM notification:', {
+      userEmail,
+      title,
+      body,
+      data
+    });
+
+    // Get user's FCM tokens
+    const tokens = await Token.find({});
+    console.log('Found FCM tokens:', {
+      tokenCount: tokens.length,
+      tokens: tokens.map(t => t.token)
+    });
+
+    if (!tokens.length) {
+      console.warn("⚠️ No FCM tokens found for notification");
+      return;
+    }
+
+    const message = {
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        ...data,
+        click_action: "/transaction-details", // URL to open when notification is clicked
+        timestamp: new Date().toISOString(),
+      },
+      tokens: tokens.map(t => t.token)
+    };
+
+    console.log('Preparing FCM message:', message);
+
+    const response = await admin.messaging().sendMulticast(message);
+    console.log('✅ FCM Notification sent:', {
+      success: response.successCount,
+      failure: response.failureCount,
+      responses: response.responses.map((resp, idx) => ({
+        token: tokens[idx].token.substring(0, 20) + '...', // Show partial token for privacy
+        success: resp.success,
+        error: resp.error?.message
+      }))
+    });
+
+    // Handle failed tokens
+    if (response.failureCount > 0) {
+      const failedTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error('❌ Failed to send to token:', {
+            token: tokens[idx].token.substring(0, 20) + '...',
+            error: resp.error?.message,
+            errorCode: resp.error?.code
+          });
+          failedTokens.push(tokens[idx].token);
+        }
+      });
+      
+      if (failedTokens.length) {
+        console.log('Removing failed tokens:', {
+          count: failedTokens.length,
+          tokens: failedTokens.map(t => t.substring(0, 20) + '...')
+        });
+        await Token.deleteMany({ token: { $in: failedTokens } });
+        console.log('✅ Failed tokens removed from database');
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error('❌ Error sending FCM notification:', {
+      error: error.message,
+      stack: error.stack,
+      userEmail,
+      title
+    });
+  }
+};
 
 module.exports = {
   getTransactions,

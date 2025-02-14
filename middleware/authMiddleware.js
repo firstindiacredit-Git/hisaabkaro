@@ -47,7 +47,7 @@ const protect = (req, res, next) => {
       email: decoded.email,
       name: decoded.name
     };
-    console.log('Protected route accessed by user:', req.user);
+    // console.log('Protected route accessed by user:', req.user);
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

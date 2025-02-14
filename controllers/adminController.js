@@ -10,7 +10,7 @@ const fs = require('fs');
 // Create JWT token
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024', {
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    expiresIn: '7d'
   });
 };
 

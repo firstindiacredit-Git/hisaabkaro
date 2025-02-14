@@ -20,6 +20,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 const upload = require("multer")();
 const notificationRoutes = require('./routes/notificationRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
+const fcmRoutes = require('./routes/fcmRoutes');
 //databse call
 connectDb();
 //rest object
@@ -144,6 +146,10 @@ app.use("/api/v1/admin", adminRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invoices', invoiceRoutes);
+
+// FCM routes
+app.use('/api/fcm', fcmRoutes);
 
 // Add this endpoint to handle PDF uploads
 app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
@@ -199,16 +205,16 @@ app.use((err, req, res, next) => {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected');
+  // console.log('Client connected');
 
   // Join client-specific room for notifications
   socket.on('join', (userId) => {
-    console.log('Client joined room:', userId);
+    // console.log('Client joined room:', userId);
     socket.join(userId);
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    // console.log('Client disconnected');
   });
 });
 
