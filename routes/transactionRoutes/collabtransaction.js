@@ -1,18 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const {
-  createTransaction,
+ 
   getTransactions,
-  confirmTransaction,
   getTransactionstoclient,
   getTransactionById,
-  addExistingTransaction,
-  updateTransaction,
-  deleteTransactionEntry,
-} = require("../../controllers/collaborativeBookController/collaborativeBookController"); // Adjust path if necessary
 
+
+
+} = require("../../controllers/collaborativeBookController/collaborativeBookController"); // Adjust path if necessary
+const { confirmTransaction } = require("../../controllers/collaborativeBookController/confirmTransaction");
+const { updateTransaction } = require("../../controllers/collaborativeBookController/updateTransaction");
+const { deleteTransactionEntry } = require("../../controllers/collaborativeBookController/deleteTransactionController");
+const { addExistingTransaction } = require("../../controllers/collaborativeBookController/clientCreateTransaction");
+const { createTransaction } = require("../../controllers/collaborativeBookController/createTransaction");
 const {authenticate} = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/uploadMiddleware");
+
 // Route to create a new transaction
 router.post(
 
