@@ -62,8 +62,8 @@ const createNotification = async (notificationData) => {
 
 
     const swappedMessage = swapTransactionMessage(notificationData.message);
-    console.log('Original message:', notificationData.message);
-    console.log('Swapped message:', swappedMessage);
+    // console.log('Original message:', notificationData.message);
+    // console.log('Swapped message:', swappedMessage);
 
     const notification = await Notification.create({
       recipient: recipient._id,

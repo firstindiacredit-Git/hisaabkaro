@@ -7,6 +7,7 @@ const notificationController = require("../notificationController");
 const axios = require("axios");
 const admin = require("../../firebase-admin");
 const Token = require("../../models/tokenModel/Token");
+const Book = require("../../models/bookModel/bookModel");
 
 require("dotenv").config();
 
@@ -14,7 +15,6 @@ notificationapi.init(
   process.env.NotificationclientId,
   process.env.NotificationclientSecret
 );
-
 
 const createTransaction = async (req, res) => {
   try {
@@ -51,6 +51,8 @@ const createTransaction = async (req, res) => {
     if (!initiaterId) {
       return res.status(400).json({ message: "Initiater ID is not provided." });
     }
+    const book = await Book.findById(bookId);
+    const bookName = book ? book.bookname : "Unknown Book";
 
     // Parse amount to a number if it's a string
     let parsedAmount = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -108,7 +110,7 @@ const createTransaction = async (req, res) => {
         sender: userId,
         type: "TRANSACTION",
         title: "Transaction Entry Added",
-        message: `${initiatedBy} added a new transaction entry of ${amount} (${transactionType})`,
+        message: `${initiatedBy} added a new transaction entry of ${amount} (${transactionType})in the (${bookName}) book`,
         relatedId: transaction._id,
         onModel: "Transaction",
         actionType: "updated",
@@ -146,7 +148,7 @@ const createTransaction = async (req, res) => {
       //   sender: userId,
       //   type: 'TRANSACTION',
       //   title: 'New Transaction Created',
-      //   message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
+      //   message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})in the book named ${bookName}`,
       //   relatedId: transaction._id,
       //   onModel: 'Transaction',
       //   actionType: 'created'
@@ -158,7 +160,7 @@ const createTransaction = async (req, res) => {
           sender: userId,
           type: "TRANSACTION",
           title: "New Transaction Created",
-          message: `${initiatedBy} created a new transaction of ${amount} (${transactionType})`,
+          message: `${initiatedBy} created a new transaction of ${amount} (${transactionType}) in the book named ${bookName}`,
           relatedId: transaction._id,
           onModel: "Transaction",
           actionType: "created",
@@ -210,20 +212,21 @@ const createTransaction = async (req, res) => {
       transactionId: transaction._id,
     });
 
-    // Send FCM notification
-
     // Send FCM WebPush notification
-    let recipientUser = await User.findOne({ email: client.email });
-
+    let recipientUser = await User.findOne({ email: client.email })
     if (recipientUser) {
       let userToken = await Token.findOne({ userId: recipientUser._id });
-
       if (userToken && userToken.token) {
         const message = {
           token: userToken.token,
+          
           notification: {
             title: "New Transaction Notification",
-            body: `${initiatedBy} added a transaction of ${amount} (${transactionType})`,
+            body: `${initiatedBy} added a transaction of ${amount} (${
+              transactionType === "you will get"
+                ? "you will give"
+                : "you will get"
+            }) in the book named ${bookName}`,
           },
           data: {
             transactionId: transaction._id.toString(),
@@ -249,6 +252,7 @@ const createTransaction = async (req, res) => {
           console.log("✅ FCM Notification sent successfully");
         } catch (fcmError) {
           console.error("❌ Error sending FCM notification:", fcmError);
+         
         }
       } else {
         console.log("⚠️ FCM Token not found for recipient user.");
@@ -271,7 +275,5 @@ const createTransaction = async (req, res) => {
 };
 
 module.exports = {
-   
-  createTransaction
-   
+  createTransaction,
 };

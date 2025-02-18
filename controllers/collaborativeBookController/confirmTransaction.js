@@ -9,6 +9,7 @@ const notificationController = require("../notificationController");
 const axios = require("axios");
 const admin = require("../../firebase-admin");
 const Token = require("../../models/tokenModel/Token");
+const Book = require("../../models/bookModel/bookModel");
 
 require("dotenv").config();
 notificationapi.init(
@@ -66,11 +67,9 @@ const confirmTransaction = async (req, res) => {
       console.warn(
         "Warning: This transaction entry has already been confirmed."
       );
-      return res
-        .status(400)
-        .json({
-          message: "This transaction entry has already been confirmed.",
-        });
+      return res.status(400).json({
+        message: "This transaction entry has already been confirmed.",
+      });
     }
 
     pendingEntry.confirmationStatus = "confirmed";
@@ -113,7 +112,9 @@ const confirmTransaction = async (req, res) => {
         .status(404)
         .json({ message: "Sender not found in User model." });
     }
-
+      const bookId = transaction.bookId;
+ const book = await Book.findById(bookId);
+const bookName = book ? book.bookname : "Unknown Book";
     // Determine recipient (opposite party)
     const recipient =
       sender._id.toString() === transaction.userId._id.toString()
@@ -144,6 +145,52 @@ const confirmTransaction = async (req, res) => {
       onModel: "Transaction",
       actionType: "updated",
     });
+
+    // Send FCM WebPush notification
+ let recipientUser = await User.findOne({ email: recipient.email });
+
+    if (recipientUser) {
+      let userToken = await Token.findOne({ userId: recipientUser._id });
+      console.log("userToken", userToken);
+
+      if (userToken && userToken.token) {
+        const message = {
+          token: userToken.token,
+          notification: {
+            title: "Transaction Entry Deleted",
+            body: `${req.user.name} confirmed a transaction entry in your transaction book named ${bookName}`,
+          },
+          data: {
+            transactionId: transaction._id.toString(),
+          },
+          android: {
+            priority: "high",
+          },
+          webpush: {
+            headers: {
+              Urgency: "high",
+            },
+            notification: {
+              icon: "/logo192.png",
+              badge: "/badge.png",
+              click_action: "https://www.hisaabkaro.com/transactions",
+            },
+          },
+        };
+
+        try {
+          await admin.messaging().send(message);
+          console.log("✅ FCM Notification sent successfully");
+        } catch (fcmError) {
+          console.error("❌ Error sending FCM notification:", fcmError);
+          console.log("message", message);
+        }
+      } else {
+        console.log("⚠️ FCM Token not found for recipient user.");
+      }
+    } else {
+      console.log("⚠️ Recipient user not found in User model.");
+    }
 
     res.status(200).json({
       message: "Transaction entry confirmed.",
