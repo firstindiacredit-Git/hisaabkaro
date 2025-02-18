@@ -157,7 +157,7 @@ const bookName = book ? book.bookname : "Unknown Book";
         const message = {
           token: userToken.token,
           notification: {
-            title: "Transaction Entry Deleted",
+            title: "Transaction Entry Confirmed",
             body: `${req.user.name} confirmed a transaction entry in your transaction book named ${bookName}`,
           },
           data: {
