@@ -7,7 +7,7 @@ const notificationController = require("../notificationController");
 const axios = require("axios");
 const admin = require("../../firebase-admin");
 const Token = require("../../models/tokenModel/Token");
-
+const Book = require("../../models/bookModel/bookModel");
 
 
 
@@ -171,7 +171,56 @@ const addExistingTransaction = async (req, res) => {
       transactionId: transaction._id,
     });
 
-  
+  const bookId = transaction.bookId;
+    const book = await Book.findById(bookId);
+    const bookName = book ? book.bookname : "Unknown Book";
+
+
+
+  let recipientUser = await User.findOne({ email: recipient.email });
+
+  if (recipientUser) {
+    let userToken = await Token.findOne({ userId: recipientUser._id });
+    console.log("userToken", userToken);
+
+    if (userToken && userToken.token) {
+      const message = {
+        token: userToken.token,
+        notification: {
+          title: "Transaction Entry Added",
+          body: `${req.user.name} confirmed a transaction entry in your transaction book named ${bookName}`,
+        },
+        data: {
+          transactionId: transaction._id.toString(),
+        },
+        android: {
+          priority: "high",
+        },
+        webpush: {
+          headers: {
+            Urgency: "high",
+          },
+          notification: {
+            icon: "/logo192.png",
+            badge: "/badge.png",
+            click_action: "https://www.hisaabkaro.com/transactions",
+          },
+        },
+      };
+
+      try {
+        await admin.messaging().send(message);
+        console.log("✅ FCM Notification sent successfully");
+      } catch (fcmError) {
+        console.error("❌ Error sending FCM notification:", fcmError);
+        console.log("message", message);
+      }
+    } else {
+      console.log("⚠️ FCM Token not found for recipient user.");
+    }
+  } else {
+    console.log("⚠️ Recipient user not found in User model.");
+  }
     // Send the updated transaction back in the response
     res.status(200).json({
       success: true,

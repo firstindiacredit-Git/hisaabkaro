@@ -4,6 +4,10 @@ const User = require("../../models/userModel/userModel");
 const notificationapi = require("notificationapi-node-server-sdk").default;
 const upload = require("../../middleware/uploadMiddleware"); // Multer middleware for file uploads
 const notificationController = require("../notificationController");
+const Book = require("../../models/bookModel/bookModel");
+const Token = require("../../models/tokenModel/Token");
+const admin = require("../../firebase-admin");
+
 
 require("dotenv").config();
 notificationapi.init(
@@ -89,7 +93,10 @@ const updateTransaction = async (req, res) => {
     transaction.outstandingBalance = updatedBalance;
 
     await transaction.save();
-
+     const bookId = transaction.bookId;
+     
+const book = await Book.findById(bookId);
+const bookName = book ? book.bookname : "Unknown Book";
     // Find the correct sender
     let sender = await User.findOne({ email: req.user.email });
     if (!sender) {
@@ -123,6 +130,50 @@ const updateTransaction = async (req, res) => {
     });
 
     // Send FCM notification
+    // Send FCM WebPush notification
+    let recipientUser = await User.findOne({ email: recipientEmail });
+    if (recipientUser) {
+      let userToken = await Token.findOne({ userId: recipientUser._id });
+      console.log("userToken", userToken);
+
+      if (userToken && userToken.token) {
+        const message = {
+          token: userToken.token,
+          notification: {
+            title: "Transaction Entry Updated",
+            body: `${req.user.name} updated a transaction entry in your transaction book named ${bookName}`,
+          },
+          data: {
+            transactionId: transaction._id.toString(),
+          },
+          android: {
+            priority: "high",
+          },
+          webpush: {
+            headers: {
+              Urgency: "high",
+            },
+            notification: {
+              icon: "/logo192.png",
+              badge: "/badge.png",
+              click_action: "https://www.hisaabkaro.com/transactions",
+            },
+          },
+        };
+
+        try {
+          await admin.messaging().send(message);
+          console.log("✅ FCM Notification sent successfully");
+        } catch (fcmError) {
+          console.error("❌ Error sending FCM notification:", fcmError);
+          console.log("message", message);
+        }
+      } else {
+        console.log("⚠️ FCM Token not found for recipient user.");
+      }
+    } else {
+      console.log("⚠️ Recipient user not found in User model.");
+    }
 
     res.status(200).json({
       message: "Transaction updated successfully.",
