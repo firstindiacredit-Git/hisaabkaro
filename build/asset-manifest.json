@@ -1,15 +1,14 @@
 {
   "files": {
-    "main.css": "/static/css/main.c9ae4016.css",
-    "main.js": "/static/js/main.09b47c90.js",
+    "main.css": "/static/css/main.66e6f541.css",
+    "main.js": "/static/js/main.f565d430.js",
     "static/js/971.adfdc66c.chunk.js": "/static/js/971.adfdc66c.chunk.js",
     "static/js/288.ae28cdbe.chunk.js": "/static/js/288.ae28cdbe.chunk.js",
-    "static/js/888.fd5f9464.chunk.js": "/static/js/888.fd5f9464.chunk.js",
-    "static/js/24.c936bd92.chunk.js": "/static/js/24.c936bd92.chunk.js",
+    "static/js/888.4750c0b9.chunk.js": "/static/js/888.4750c0b9.chunk.js",
+    "static/js/24.c317f02e.chunk.js": "/static/js/24.c317f02e.chunk.js",
     "static/js/760.70adc914.chunk.js": "/static/js/760.70adc914.chunk.js",
     "static/js/790.dd2f5901.chunk.js": "/static/js/790.dd2f5901.chunk.js",
     "static/js/206.f8819006.chunk.js": "/static/js/206.f8819006.chunk.js",
-    "static/media/site-icon.png": "/static/media/site-icon.92f2ca1e5f68c15d5d5d.png",
     "index.html": "/index.html",
     "static/media/cursor-editorTextHighlight.svg": "/static/media/cursor-editorTextHighlight.3683cfffdcbd73685ff2.svg",
     "static/media/altText_disclaimer.svg": "/static/media/altText_disclaimer.9235a934bba6a11e0c0e.svg",
@@ -27,7 +26,7 @@
     "static/media/toolbarButton-menuArrow.svg": "/static/media/toolbarButton-menuArrow.76692c54994797ddfb04.svg"
   },
   "entrypoints": [
-    "static/css/main.c9ae4016.css",
-    "static/js/main.09b47c90.js"
+    "static/css/main.66e6f541.css",
+    "static/js/main.f565d430.js"
   ]
 }
