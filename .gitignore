@@ -118,4 +118,5 @@ dist
 .pnp.*
 ./config/firebase-adminsdk.json
 
-# End of https://mrkandreev.name/snippets/gitignore-generator/#Node
+# End of https://mrkandreev.name/snippets/gitignore-generator/#Nodeconfig/firebase-adminsdk.json
+config/firebase-adminsdk.json
