@@ -3,52 +3,38 @@ const Token = require("../models/tokenModel/Token");
 
 const fcmController = {
   // Save or update FCM token
- saveToken: async (req, res) => {
-  try {
-    const { token } = req.body;
-    const userId = req.user.id;
+  saveToken: async (req, res) => {
+    try {
+      const { token } = req.body;
+      const userId = req.user.id;
 
-    if (!token || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Token and userId are required",
-      });
-    }
-
-    // Check if the token already exists in the database
-    const existingToken = await Token.findOne({ token });
-
-    if (existingToken) {
-      // If token exists but belongs to a different user, update it
-      if (existingToken.userId.toString() !== userId) {
-        existingToken.userId = userId;
-        await existingToken.save();
+      if (!token || !userId) {
+        return res.status(400).json({
+          success: false,
+          message: "Token and userId are required",
+        });
       }
 
-      return res.status(200).json({
+      // Remove any old tokens for this user before saving the new one
+      await Token.deleteMany({ userId });
+
+      // Save the new token
+      const newToken = new Token({ userId, token });
+      await newToken.save();
+
+      res.status(200).json({
         success: true,
-        message: "Token updated successfully",
-        token: existingToken,
+        message: "Token saved successfully",
+        token: newToken,
+      });
+    } catch (error) {
+      console.error("Error saving FCM token:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error saving token",
       });
     }
-
-    // If token is not found, create a new entry
-    const newToken = new Token({ userId, token });
-    await newToken.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Token saved successfully",
-      token: newToken,
-    });
-  } catch (error) {
-    console.error("Error saving FCM token:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error saving token",
-    });
-  }
-},
+  },
 
   // Send FCM notification to a specific token
   sendToToken: async (req, res) => {
@@ -97,12 +83,10 @@ const fcmController = {
         !title ||
         !body
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Tokens, title, and body are required",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Tokens, title, and body are required",
+        });
       }
 
       const validTokens = tokens.filter(

@@ -1,12 +1,7 @@
 const Transaction = require("../../models/transactionModel/transactionModel");
 const Client = require("../../models/clientUserModel/clientUserModel");
-const User = require("../../models/userModel/userModel");
-const notificationapi = require("notificationapi-node-server-sdk").default;
-const upload = require("../../middleware/uploadMiddleware"); // Multer middleware for file uploads
-const notificationController = require('../notificationController');
-const axios = require('axios');
-const admin = require("../../firebase-admin");
-const Token = require("../../models/tokenModel/Token");
+ const notificationapi = require("notificationapi-node-server-sdk").default;
+ const Book = require("../../models/bookModel/bookModel");
 
 require("dotenv").config();
 notificationapi.init(process.env.NotificationclientId, process.env.NotificationclientSecret);
@@ -96,8 +91,44 @@ const getTransactionById = async (req, res) => {
     });
   }
 };
+
+const getTransactionsByBookId = async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    if (!bookId) {
+      return res.status(400).json({ error: "Book ID is required" });
+    }
+
+    const transactions = await Transaction.find({ bookId })
+      .populate({
+        path: "userId",
+        select: "name email",
+      })
+      .populate({
+        path: "clientUserId",
+        select: "name email",
+      })
+      .populate({
+        path: "bookId",
+        select: "title",
+      })
+      .sort({ createdAt: -1 }) // Sort by latest transactions
+      .lean();
+
+    if (!transactions.length) {
+      return res.status(200).json({ success: true, transactions: [] });
+    }
+
+    res.status(200).json({ success: true, transactions });
+  } catch (error) {
+    console.error("Error fetching transactions by book ID:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   getTransactions,
   getTransactionstoclient,
   getTransactionById,
+  getTransactionsByBookId,
 };
