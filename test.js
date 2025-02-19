@@ -2,7 +2,7 @@ const admin = require("./firebase-admin");
 
 // Replace with an actual token from your database
 const testToken =
-  "dgrOcA6EC4fmSPnbSjAZ1A:APA91bFxsc73gS25CfBtFTrPG60qUC6786i4MflA9Cv_ZMsNzH5rHOZPicFgrBMbFw0DCFgyPXXi5pWHcdaiuO7e4YON0N8sbhFU-564g_bkELymuHfgSDc";
+  "cmdAL51Xo0tWu8NYAMuXI3:APA91bFUdFTgVR4yqTi-7ivNb4ugnc-7c28eS6E7M8M1PB2fh-kKba_Ur74vMKbRuO6GX_k-58yCqVmh_wlW4akAXTuoYNwgVtExhxvryQaN8rzW9y0rN-Y";
 
 const message = {
   token: testToken,
