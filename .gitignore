@@ -116,7 +116,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-./config/firebase-adminsdk.json
+# ./config/firebase-adminsdk.json
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Nodeconfig/firebase-adminsdk.json
-config/firebase-adminsdk.json
+# config/firebase-adminsdk.json
