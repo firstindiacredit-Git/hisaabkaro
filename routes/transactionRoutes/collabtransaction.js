@@ -1,13 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const {
- 
   getTransactions,
   getTransactionstoclient,
   getTransactionById,
-
-
-
+  getTransactionsByBookId,
 } = require("../../controllers/collaborativeBookController/collaborativeBookController"); // Adjust path if necessary
 const { confirmTransaction } = require("../../controllers/collaborativeBookController/confirmTransaction");
 const { updateTransaction } = require("../../controllers/collaborativeBookController/updateTransaction");
@@ -29,6 +26,9 @@ router.post(
 router.get("/transactions", authenticate, getTransactions);
 router.get("/client-transactions", authenticate, getTransactionstoclient);
 router.get("/single-transaction/:id", authenticate, getTransactionById);
+
+// Route to fetch transactions for a book
+router.get("/transactions/:bookId",getTransactionsByBookId);
 // Route to confirm a pending transaction
 router.patch("/transactions/:id/confirm", authenticate, confirmTransaction);
 router.patch(
