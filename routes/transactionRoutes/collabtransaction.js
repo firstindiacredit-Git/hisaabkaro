@@ -4,7 +4,7 @@ const {
   getTransactions,
   getTransactionstoclient,
   getTransactionById,
-  getTransactionsByBookId,
+  getTransactionsByBookId,  
 } = require("../../controllers/collaborativeBookController/collaborativeBookController"); // Adjust path if necessary
 const { confirmTransaction } = require("../../controllers/collaborativeBookController/confirmTransaction");
 const { updateTransaction } = require("../../controllers/collaborativeBookController/updateTransaction");
