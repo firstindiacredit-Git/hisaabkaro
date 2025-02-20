@@ -3,14 +3,15 @@ importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Firebase configuration - hardcoded values since service workers can't access env variables
 const firebaseConfig = {
-    apiKey: "AIzaSyAWBQQS0pt-dEJxx3JbQaCP-dlmThIOmsQ",
+   apiKey: "AIzaSyAWBQQS0pt-dEJxx3JbQaCP-dlmThIOmsQ",
   authDomain: "apnakahata.firebaseapp.com",
   projectId: "apnakahata",
   storageBucket: "apnakahata.firebasestorage.app",
   messagingSenderId: "181428736249",
   appId: "1:181428736249:web:b35981a877290fd7d1d228",
   measurementId: "G-WSMTSLK59V",
-  vapidKey: "BJYKJFtr7C9cH_ScmusjquJGu91XIwg4ZB2TDe9Cp7MPU5VaUAuL7H2-noLsYVq84-6LbgodyXnYLYUVMTCPjMY",
+  vapidKey:
+    "BJYKJFtr7C9cH_ScmusjquJGu91XIwg4ZB2TDe9Cp7MPU5VaUAuL7H2-noLsYVq84-6LbgodyXnYLYUVMTCPjMY",
 };
 
 
