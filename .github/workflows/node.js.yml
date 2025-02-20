@@ -31,7 +31,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure the private key is added to GitHub Secrets
         script: |
           cd ~/hisaabkaro
-          git pull origin main
+          git pull origin newBranch
           pm2 restart all
     # Set environment variables on the server (only if .env doesn't already exist)
     - name: Ensure .env file is not modified
