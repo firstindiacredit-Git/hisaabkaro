@@ -3,10 +3,7 @@ const User = require('../models/userModel/userModel');
 const ClientUser = require('../models/clientUserModel/clientUserModel');
 const socketService = require('../services/socketService');
 const Transaction = require('../models/transactionModel/transactionModel');
-const mongoose = require('mongoose');
-const admin = require("../firebase-admin");
-const Token = require("../models/tokenModel/Token");
-
+ 
 const getNotifications = async (req, res) => {
   try {
     // Get notifications where recipientEmail matches user's email
@@ -83,12 +80,7 @@ const createNotification = async (notificationData) => {
       .populate('sender', 'name email')
       .populate('recipient', 'name email businessName');
 
-    // console.log('Created notification:', {
-    //   id: notification._id,
-    //   recipientEmail: notification.recipientEmail,
-    //   senderEmail: notification.senderEmail,
-    //   message: notification.message // Log the final message
-    // });
+    
 
     // Emit socket event using recipient's email
     const io = socketService.getIO();
@@ -290,12 +282,7 @@ const clientCreateNotification = async (notificationData) => {
       .populate('sender', 'name email')
       .populate('recipient', 'name email businessName');
 
-    // console.log('Created notification:', {
-    //   id: notification._id,
-    //   recipientEmail: notification.recipientEmail,
-    //   senderEmail: notification.senderEmail,
-    //   message: notification.message,
-    // });
+ 
 
     // Emit socket event using recipient's email
     const io = socketService.getIO();
@@ -308,83 +295,7 @@ const clientCreateNotification = async (notificationData) => {
   }
 };
 
-// Save FCM token
-const saveToken = async (req, res) => {
-  try {
-    const { token, userId } = req.body;
-    
-    if (!token || !userId) {
-      return res.status(400).json({ message: "Token and userId are required" });
-    }
-
-    const newToken = await Token.findOneAndUpdate(
-      { userId }, // Ensure token is linked to a user
-      { token, userId }, // Update token while keeping the userId
-      { upsert: true, new: true }
-    );
-
-    res.status(200).json({ message: "Token saved successfully", token: newToken });
-  } catch (error) {
-    console.error("Error saving token:", error);
-    res.status(500).json({ message: "Error saving token" });
-  }
-};
-
-
-// Send notification to a specific token
-const sendNotificationToSpecific = async (req, res) => {
-  try {
-    const { token, title, body } = req.body;
-    
-    const message = {
-      notification: {
-        title,
-        body,
-      },
-      token,
-    };
-
-    const response = await admin.messaging().send(message);
-    res.status(200).json({ 
-      message: "Notification sent successfully", 
-      response 
-    });
-  } catch (error) {
-    console.error("Error sending notification:", error);
-    res.status(500).json({ message: "Error sending notification" });
-  }
-};
-
-// Send notification to all tokens
-const sendNotificationToAll = async (req, res) => {
-  try {
-    const { title, body } = req.body;
-    const tokens = await Token.find({});
-    const tokenValues = tokens.map(t => t.token);
-
-    if (tokenValues.length === 0) {
-      return res.status(404).json({ message: "No tokens found" });
-    }
-
-    const message = {
-      notification: {
-        title,
-        body,
-      },
-      tokens: tokenValues,
-    };
-
-    const response = await admin.messaging().sendMulticast(message);
-    res.status(200).json({ 
-      message: "Notifications sent successfully", 
-      response 
-    });
-  } catch (error) {
-    console.error("Error sending notifications:", error);
-    res.status(500).json({ message: "Error sending notifications" });
-  }
-};
-
+ 
 // Export all functions
 const notificationController = {
   getNotifications,
@@ -395,12 +306,9 @@ const notificationController = {
   sendNotification,
   clearAllNotifications,
   clearReadNotifications,
-  saveToken,
-  sendNotificationToSpecific,
-  sendNotificationToAll
+ 
 };
 
 module.exports = notificationController;
 
-// Add console.log to verify exports
-// console.log('Exporting notification controller:', module.exports);
+ 

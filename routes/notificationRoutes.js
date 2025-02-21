@@ -111,12 +111,12 @@ router.delete('/clear-all', protect, clearAllNotifications);
 router.delete('/clear-read', protect, clearReadNotifications);
 
 // Save FCM token
-router.post("/api/save-token", saveToken);
+// router.post("/api/save-token", saveToken);
 
 // Send notification to specific token
-router.post("/send", sendNotification);
+// router.post("/send", sendNotification);
 
 // Send notification to all tokens
-router.post("/send-all", sendNotificationToAll);
+// router.post("/send-all", sendNotificationToAll);
 
 module.exports = router;

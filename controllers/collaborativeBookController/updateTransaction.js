@@ -156,7 +156,7 @@ const bookName = book ? book.bookname : "Unknown Book";
             notification: {
               icon: "/logo192.png",
               badge: "/badge.png",
-              click_action: "https://www.hisaabkaro.com/transactions",
+              click_action: "https://www.hisaabkaro.com",
             },
           },
         };
