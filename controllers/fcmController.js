@@ -15,17 +15,29 @@ const fcmController = {
         });
       }
 
-      // Upsert the token: If it exists, update it; otherwise, insert a new one
-      const updatedToken = await Token.findOneAndUpdate(
-        { userId }, // Find by userId
-        { $set: { token } }, // Update or set token
-        { upsert: true, new: true } // Create if not found
-      );
+      // Check if this token already exists in the database for another user
+      const existingToken = await Token.findOne({ token });
+
+      if (existingToken && existingToken.userId.toString() !== userId) {
+        // If token belongs to a different user, delete the old record
+        await Token.deleteOne({ token });
+      }
+
+      // Check if the user already has a token saved
+      const userExistingToken = await Token.findOne({ userId });
+
+      if (userExistingToken) {
+        // If the user already has a different token, remove it
+        await Token.deleteOne({ userId });
+      }
+
+      // Save the new token
+      const newToken = await Token.create({ token, userId });
 
       res.status(200).json({
         success: true,
-        message: "Token saved successfully",
-        token: updatedToken,
+        message: "Token updated successfully",
+        token: newToken,
       });
     } catch (error) {
       console.error("Error saving FCM token:", error);
