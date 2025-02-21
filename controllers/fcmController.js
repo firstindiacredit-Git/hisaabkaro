@@ -15,17 +15,17 @@ const fcmController = {
         });
       }
 
-      // Remove any old tokens for this user before saving the new one
-      await Token.deleteMany({ userId });
-
-      // Save the new token
-      const newToken = new Token({ userId, token });
-      await newToken.save();
+      // Upsert the token: If it exists, update it; otherwise, insert a new one
+      const updatedToken = await Token.findOneAndUpdate(
+        { userId }, // Find by userId
+        { $set: { token } }, // Update or set token
+        { upsert: true, new: true } // Create if not found
+      );
 
       res.status(200).json({
         success: true,
         message: "Token saved successfully",
-        token: newToken,
+        token: updatedToken,
       });
     } catch (error) {
       console.error("Error saving FCM token:", error);
