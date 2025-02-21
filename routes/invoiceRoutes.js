@@ -1,27 +1,29 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate}  = require('../middleware/authMiddleware');
-const invoiceController = require('../controllers/invoiceController');
+const auth = require("../middleware/auth");
+const invoiceController = require("../controllers/invoiceController");
 
 // All routes are protected with auth middleware
 
-
 // Create new invoice
-router.post('/', authenticate,invoiceController.createInvoice);
+router.post("/save-invoice", auth, invoiceController.createInvoice);
 
 // Get all invoices
-router.get('/', authenticate, invoiceController.getAllInvoices);
+router.get("/saved-invoices", auth, invoiceController.getAllInvoices);
 
 // Get single invoice
-router.get('/:id',authenticate, invoiceController.getInvoiceById);
+router.get("/:id", auth, invoiceController.getInvoiceById);
 
 // Update invoice
-router.put('/:id',authenticate, invoiceController.updateInvoice);
+router.put("/:id", auth, invoiceController.updateInvoice);
 
 // Delete invoice
-router.delete('/:id',authenticate, invoiceController.deleteInvoice);
+router.delete("/:id", auth, invoiceController.deleteInvoice);
 
 // Update invoice status
-router.patch('/:id/status',authenticate, invoiceController.updateInvoiceStatus);
+router.patch("/:id/status", auth, invoiceController.updateInvoiceStatus);
 
-module.exports = router; 
+// New routes for saving and sending invoices
+router.post("/send-invoice", auth, invoiceController.sendInvoice);
+
+module.exports = router;
