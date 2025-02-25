@@ -8,7 +8,7 @@ const path = require("path");
 const createBook = async (req, res) => {
   try {
     const { bookname } = req.body;
-    const userId = req.user.id; // Assuming the user ID is set in the request by authentication middleware
+    const userId = req.userId; // Assuming the user ID is set in the request by authentication middleware
 
     // Check if the book already exists for the user
     const existingBook = await TransactionBook.findOne({ userId, bookname });
@@ -29,7 +29,7 @@ const createBook = async (req, res) => {
     });
 
     await newBook.save();
-    res 
+    res
       .status(201)
       .json({ message: "Book created successfully", book: newBook });
   } catch (error) {
@@ -37,21 +37,19 @@ const createBook = async (req, res) => {
 
     // Handle the unique constraint error (if any)
     if (error.code === 11000) {
-      return res
-        .status(400)
-        .json({
-          message: "A book with this name already exists for this user.",
-        });
+      return res.status(400).json({
+        message: "A book with this name already exists for this user.",
+      });
     }
 
     res.status(500).json({ message: "Error creating book" });
   }
 };
 
-// Get all books for the logged-in user 
+// Get all books for the logged-in user
 const getAllBooks = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.userId;
 
     // Find books associated only with the logged-in user
     const books = await TransactionBook.find({ userId });
@@ -67,7 +65,7 @@ const updateBook = async (req, res) => {
   try {
     const { bookId } = req.params;
     const { bookname } = req.body;
-    const userId = req.user.id;
+    const userId = req.userId;
 
     // Find the book by ID and check that it belongs to the logged-in user
     const book = await TransactionBook.findOne({ _id: bookId, userId });
@@ -114,12 +112,14 @@ const updateBook = async (req, res) => {
 const deleteBook = async (req, res) => {
   try {
     const { bookId } = req.params;
-    const userId = req.user.id;
+    const userId = req.userId;
 
     // First find the book to get its profile image path
     const book = await TransactionBook.findOne({ _id: bookId, userId });
     if (!book) {
-      return res.status(404).json({ message: "Book not found or access denied" });
+      return res
+        .status(404)
+        .json({ message: "Book not found or access denied" });
     }
 
     // Delete the profile image if it exists
@@ -138,19 +138,21 @@ const deleteBook = async (req, res) => {
     // Delete all transactions associated with this book from both models
     await Promise.all([
       SelfRecord.deleteMany({ bookId }),
-      Transaction.deleteMany({ bookId })
+      Transaction.deleteMany({ bookId }),
     ]);
 
     // Delete the book
     await TransactionBook.findByIdAndDelete(bookId);
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: "Book and all associated transactions deleted successfully",
-      deletedBook: book 
+      deletedBook: book,
     });
   } catch (error) {
     console.error("Error in deleteBook:", error);
-    res.status(500).json({ message: "Error deleting book", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error deleting book", error: error.message });
   }
 };
 
@@ -159,7 +161,7 @@ const deleteBook = async (req, res) => {
 const getBookById = async (req, res) => {
   try {
     const { bookId } = req.params;
-    const userId = req.user.id;
+    const userId = req.userId;
 
     // Find the book by ID and check that it belongs to the logged-in user
     const book = await TransactionBook.findOne({ _id: bookId, userId });

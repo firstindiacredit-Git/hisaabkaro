@@ -64,7 +64,15 @@ const invoiceSchema = new mongoose.Schema({
     }
   },
   sentAt: Date,
-  paidAt: Date
+  paidAt: Date,
+  recipientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  recipientUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true
 });

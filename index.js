@@ -2,9 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const colors = require("colors");
-const http = require('http');
-const { Server } = require('socket.io');
-const socketService = require('./services/socketService');
+const http = require("http");
+const { Server } = require("socket.io");
+const socketService = require("./services/socketService");
 // Load env vars first
 dotenv.config();
 const session = require("express-session");
@@ -19,9 +19,9 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/adminRoutes");
 const path = require("path");
 const upload = require("multer")();
-const notificationRoutes = require('./routes/notificationRoutes');
-const invoiceRoutes = require('./routes/invoiceRoutes');
-const fcmRoutes = require('./routes/fcmRoutes');
+const notificationRoutes = require("./routes/notificationRoutes");
+const invoiceRoutes = require("./routes/invoiceRoutes");
+const fcmRoutes = require("./routes/fcmRoutes");
 //databse call
 connectDb();
 //rest object
@@ -31,10 +31,9 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.REACT_APP_URI,
-    methods: ['GET', 'POST']
-  }
+    methods: ["GET", "POST"],
+  },
 });
-
 
 // Initialize socket service
 socketService.init(io);
@@ -43,30 +42,35 @@ socketService.init(io);
 app.use(express.json());
 
 // CORS configuration
-app.use(cors({
-  origin: '*', // Your frontend URL
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'], // Allow specific HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: "*", // Your frontend URL
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], // Allow specific HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // Update headers for file serving and frame options
 app.use((req, res, next) => {
   // Remove the X-Frame-Options header that's causing the issue
   // res.header('X-Frame-Options', 'SAMEORIGIN');
-  
+
   // Add necessary CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+  );
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+
   // For PDF files
   if (req.path.match(/\.(pdf)$/i)) {
-    res.header('Content-Type', 'application/pdf');
-    res.header('Content-Disposition', 'inline');
+    res.header("Content-Type", "application/pdf");
+    res.header("Content-Disposition", "inline");
   }
-  
+
   next();
 });
 
@@ -78,7 +82,10 @@ app.use((req, res, next) => {
   res.header("X-Content-Type-Options", "nosniff");
   res.header("X-Frame-Options", "SAMEORIGIN");
   res.header("X-XSS-Protection", "1; mode=block");
-  res.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  res.header(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains"
+  );
   res.header("Referrer-Policy", "strict-origin-when-cross-origin");
   res.header("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
   next();
@@ -104,28 +111,34 @@ app.use(
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
-app.use('/favicon.png', express.static(path.join(__dirname, 'public', 'favicon.png')));
+app.use(
+  "/favicon.png",
+  express.static(path.join(__dirname, "public", "favicon.png"))
+);
 
 // Update the static file serving middleware
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.pdf')) {
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline',
-        'X-Frame-Options': 'ALLOWALL'
-      });
-    }
-  }
-}));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".pdf")) {
+        res.set({
+          "Content-Type": "application/pdf",
+          "Content-Disposition": "inline",
+          "X-Frame-Options": "ALLOWALL",
+        });
+      }
+    },
+  })
+);
 
 // Normalize file paths in responses
 app.use((req, res, next) => {
   const oldJson = res.json;
-  res.json = function(data) {
+  res.json = function (data) {
     // If the response contains file paths, normalize them
     if (data && data.file) {
-      data.file = data.file.replace(/\\/g, '/');
+      data.file = data.file.replace(/\\/g, "/");
     }
     return oldJson.call(this, data);
   };
@@ -145,17 +158,19 @@ app.use("/api/v4/transaction", selftransactionRoutes);
 app.use("/api/v1/admin", adminRoutes);
 //api for collab transactions
 app.use("/api/collab-transactions", collabtransactionRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/invoices', invoiceRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/invoices", invoiceRoutes);
 
 // FCM routes
-app.use('/api/fcm', fcmRoutes);
+app.use("/api/fcm", fcmRoutes);
 
 // Add this endpoint to handle PDF uploads
-app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
+app.post("/api/upload-pdf", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
     }
 
     // Generate a public URL for the uploaded file
@@ -164,13 +179,13 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     res.json({
       success: true,
       fileUrl,
-      message: 'PDF uploaded successfully'
+      message: "PDF uploaded successfully",
     });
   } catch (error) {
-    console.error('Error uploading PDF:', error);
+    console.error("Error uploading PDF:", error);
     res.status(500).json({
       success: false,
-      message: 'Error uploading PDF'
+      message: "Error uploading PDF",
     });
   }
 });
@@ -200,28 +215,32 @@ server.listen(PORT, () => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  res.status(500).send("Something broke!");
 });
 
 // Socket.io connection handling
-io.on('connection', (socket) => {
-  // console.log('Client connected');
+io.on("connection", (socket) => {
+  console.log("Client connected");
 
-  // Join client-specific room for notifications
-  socket.on('join', (userId) => {
-    // console.log('Client joined room:', userId);
-    socket.join(userId);
+  // Handle client registration for notifications
+  socket.on("REGISTER", (data) => {
+    const { email, userId } = data;
+    console.log("Client registered:", { email, userId });
+
+    // Join rooms for both email and userId
+    socket.join(`client_${email}`);
+    socket.join(`user_${userId}`);
   });
 
-  socket.on('disconnect', () => {
-    // console.log('Client disconnected');
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
   });
 });
 
-// Update the notification emission in your transaction routes or wherever notifications are created
+// Update the notification emission function
 const emitNotification = (notification, recipientEmail) => {
-  console.log('Emitting notification to:', `client_${recipientEmail}`);
-  io.to(`client_${recipientEmail}`).emit('newNotification', notification);
+  console.log("Emitting notification to:", `client_${recipientEmail}`);
+  io.to(`client_${recipientEmail}`).emit("newNotification", notification);
 };
 
 // Export the emitNotification function

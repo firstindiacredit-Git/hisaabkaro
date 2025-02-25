@@ -1,17 +1,11 @@
 const express = require("express");
 const path = require("path");
 const http = require("http");
-const {
-  initializeWebSocket,
-} = require("./controllers/notificationController/notificationController");
 const notificationRoutes = require("./routes/notificationRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 
 const app = express();
 const server = http.createServer(app);
-
-// Initialize WebSocket
-initializeWebSocket(server);
 
 // Add this near the top of your Express app configuration
 app.use((req, res, next) => {

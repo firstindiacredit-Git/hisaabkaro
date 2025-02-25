@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const Invoice = require("../models/invoiceModel");
 const { validateInvoice } = require("../utils/validation");
+const Notification = require("../models/notificationModel");
 
 // Create new invoice
 exports.createInvoice = async (req, res) => {
@@ -151,12 +153,26 @@ exports.getAllInvoices = async (req, res) => {
 // Get single invoice by ID
 exports.getInvoiceById = async (req, res) => {
   try {
+    // Add validation for ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid invoice ID format",
+      });
+    }
+
     const invoice = await Invoice.findOne({
       _id: req.params.id,
-      userId: req.user._id,
-    }).select(
-      "invoiceNumber date dueDate status template items subtotal tax total billingDetails createdAt updatedAt"
-    );
+      $or: [
+        { userId: req.user._id }, // Sender
+        { recipientId: req.user._id }, // Recipient
+        { "billingDetails.to.email": req.user.email }, // Fallback for recipient
+      ],
+    })
+      .select(
+        "invoiceNumber date dueDate status template items subtotal tax total billingDetails createdAt updatedAt sender recipientId sentAt isRead"
+      )
+      .populate("userId", "name email"); // Populate sender details
 
     if (!invoice) {
       return res.status(404).json({
@@ -182,6 +198,18 @@ exports.getInvoiceById = async (req, res) => {
           from: invoice.billingDetails.from,
           to: invoice.billingDetails.to,
         },
+        sender: invoice.userId
+          ? {
+              name: invoice.userId.name,
+              email: invoice.userId.email,
+            }
+          : {
+              name: invoice.billingDetails.from.companyName,
+              email: invoice.billingDetails.from.email,
+            },
+        recipientId: invoice.recipientId,
+        sentAt: invoice.sentAt,
+        isRead: invoice.isRead,
         createdAt: invoice.createdAt,
         updatedAt: invoice.updatedAt,
       },
@@ -295,7 +323,10 @@ exports.updateInvoiceStatus = async (req, res) => {
 
     const invoice = await Invoice.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
-      { status },
+      {
+        status,
+        ...(status === "sent" ? { sentAt: new Date() } : {}),
+      },
       { new: true }
     );
 
@@ -309,7 +340,7 @@ exports.updateInvoiceStatus = async (req, res) => {
     res.json({
       success: true,
       message: "Invoice status updated successfully",
-      data: invoice.template,
+      data: invoice,
     });
   } catch (error) {
     console.error("Error updating invoice status:", error);
@@ -374,19 +405,40 @@ exports.getSavedInvoices = async (req, res) => {
   }
 };
 
-// Add this back to the controller if needed
-exports.sendInvoice = async (req, res) => {
+// Modify the sendInvoice controller method
+exports.sentInvoice = async (req, res) => {
   try {
+    const { recipientEmail, recipientId, ...invoiceData } = req.body;
     const userId = req.user._id;
-    const invoiceData = {
-      ...req.body,
-      userId,
-      status: "sent",
-      sentAt: new Date(),
-    };
 
-    // Validate invoice data
-    const validationError = validateInvoice(invoiceData);
+    // Validate required fields
+    if (!recipientEmail || !recipientId) {
+      return res.status(400).json({
+        success: false,
+        message: "Recipient email and ID are required",
+      });
+    }
+
+    if (!invoiceData.billingDetails?.from || !invoiceData.billingDetails?.to) {
+      return res.status(400).json({
+        success: false,
+        message: "Billing details are required",
+      });
+    }
+
+    // Create the invoice
+    const invoice = new Invoice({
+      ...invoiceData,
+      userId,
+      recipientEmail,
+      recipientId,
+      status: "sent",
+      isRead: false,
+      sentAt: new Date(),
+    });
+
+    // Validate the invoice data
+    const validationError = validateInvoice(invoice);
     if (validationError) {
       return res.status(400).json({
         success: false,
@@ -395,38 +447,170 @@ exports.sendInvoice = async (req, res) => {
       });
     }
 
-    const invoice = new Invoice(invoiceData);
     await invoice.save();
+
+    // Send notification if configured
+    if (req.app.get("sendInvoiceNotification")) {
+      req.app.get("sendInvoiceNotification")(recipientEmail, {
+        type: "NEW_INVOICE",
+        senderName: req.user.name,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: invoice.total,
+      });
+    }
 
     res.status(201).json({
       success: true,
       message: "Invoice sent successfully",
-      data: {
-        _id: invoice._id,
-        invoiceNumber: invoice.invoiceNumber,
-        date: invoice.date,
-        dueDate: invoice.dueDate,
-        status: invoice.status,
-        template: invoice.template,
-        items: invoice.items,
-        subtotal: invoice.subtotal,
-        tax: invoice.tax,
-        total: invoice.total,
-        billingDetails: {
-          from: invoice.billingDetails.from,
-          to: invoice.billingDetails.to,
-        },
-        createdAt: invoice.createdAt,
-        updatedAt: invoice.updatedAt,
-        sentAt: invoice.sentAt,
-      },
+      data: invoice,
     });
   } catch (error) {
     console.error("Error sending invoice:", error);
     res.status(500).json({
       success: false,
-      message: "Error sending invoice",
+      message: error.message || "Failed to send invoice",
+    });
+  }
+};
+
+// Add this new controller method for getting sent invoices
+exports.getSentInvoices = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { sortBy = "createdAt", order = "desc" } = req.query;
+
+    const query = {
+      userId,
+      status: "sent", // Only get sent invoices
+    };
+
+    const invoices = await Invoice.find(query)
+      .sort({ [sortBy]: order === "desc" ? -1 : 1 })
+      .populate("template")
+      .lean();
+
+    res.json({
+      success: true,
+      data: invoices,
+    });
+  } catch (error) {
+    console.error("Error fetching sent invoices:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching sent invoices",
       error: error.message,
+    });
+  }
+};
+
+// Update the getReceivedInvoices method
+exports.getReceivedInvoices = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Validate if userId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID format",
+      });
+    }
+
+    // Find invoices where this user is the recipient
+    const invoices = await Invoice.find({
+      $or: [
+        { recipientId: userId }, // Match by recipientId
+        { "billingDetails.to.email": req.user.email }, // Also match by email as fallback
+      ],
+    }).populate("userId", "name email"); // Populate sender details
+
+    if (!invoices || invoices.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "No invoices found for this user",
+      });
+    }
+
+    // Format invoices with all required fields
+    const formattedInvoices = invoices.map((invoice) => ({
+      _id: invoice._id,
+      invoiceNumber: invoice.invoiceNumber,
+      date: invoice.date,
+      dueDate: invoice.dueDate,
+      status: invoice.status,
+      template: invoice.template || {},
+      items: invoice.items,
+      subtotal: invoice.subtotal,
+      tax: invoice.tax,
+      total: invoice.total,
+      billingDetails: {
+        from: invoice.billingDetails.from,
+        to: invoice.billingDetails.to,
+      },
+      sender: invoice.userId
+        ? {
+            name: invoice.userId.name,
+            email: invoice.userId.email,
+          }
+        : {
+            name: invoice.billingDetails.from.companyName,
+            email: invoice.billingDetails.from.email,
+          },
+      recipientId: invoice.recipientId,
+      sentAt: invoice.sentAt,
+      isRead: invoice.isRead,
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: formattedInvoices,
+      unreadCount: formattedInvoices.filter((invoice) => !invoice.isRead)
+        .length,
+    });
+  } catch (error) {
+    console.error("Error in getReceivedInvoices:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch received invoices",
+    });
+  }
+};
+
+// Add a new method to mark notifications as read
+exports.markInvoiceNotificationsAsRead = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    await Notification.updateMany(
+      {
+        userId: userId,
+        type: "INVOICE_RECEIVED",
+        isRead: false,
+      },
+      {
+        $set: { isRead: true },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Notifications marked as read",
+    });
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark notifications as read",
     });
   }
 };
