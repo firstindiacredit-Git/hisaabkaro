@@ -4,84 +4,83 @@ const {
   getNotifications,
   markAsRead,
   markAllAsRead,
-  sendNotification,
+   
   clearAllNotifications,
   clearReadNotifications,
-  saveToken,
-  sendNotificationToAll
+  
 } = require('../controllers/notificationController');
 const { protect } = require('../middleware/authMiddleware');
 const Notification = require('../models/notificationModel');
 const { emitNotification } = require('../index');
 
 // Debug route to check all notifications without any filters
-router.get('/debug/all', protect, async (req, res) => {
-  try {
-    // Raw MongoDB query to check all documents
-    const allDocs = await Notification.collection.find({}).toArray();
-    console.log('Raw MongoDB documents:', allDocs);
+// router.get('/debug/all', protect, async (req, res) => {
+//   try {
+//     // Raw MongoDB query to check all documents
+//     // const allDocs = await Notification.collection.find({}).toArray();
+//     // console.log('Raw MongoDB documents:', allDocs);
 
-    // Check with Mongoose
-    const allNotifications = await Notification.find({});
-    console.log('Mongoose documents:', allNotifications);
+//     // Check with Mongoose
+//     const allNotifications = await Notification.find({});
+//     console.log('Mongoose documents:', allNotifications);
 
-    // Check specific user's notifications
-    const userNotifications = await Notification.find({ 
-      recipient: req.user.id 
-    });
-    console.log('User specific notifications:', userNotifications);
+//     // Check specific user's notifications
+//     const userNotifications = await Notification.find({ 
+//       recipient: req.user.id 
+//     });
+//     console.log('User specific notifications:', userNotifications);
 
-    // Check collection stats
-    const stats = await Notification.collection.stats();
-    console.log('Collection stats:', stats);
+//     // Check collection stats
+//     const stats = await Notification.collection.stats();
+//     console.log('Collection stats:', stats);
 
-    res.json({
-      success: true,
-      stats: stats,
-      rawCount: allDocs.length,
-      mongooseCount: allNotifications.length,
-      userCount: userNotifications.length,
-      rawDocs: allDocs,
-      mongooseDocs: allNotifications,
-      userDocs: userNotifications
-    });
-  } catch (error) {
-    console.error('Debug route error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      stack: error.stack
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       stats: stats,
+//       rawCount: allDocs.length,
+//       mongooseCount: allNotifications.length,
+//       userCount: userNotifications.length,
+//       rawDocs: allDocs,
+//       mongooseDocs: allNotifications,
+//       userDocs: userNotifications
+//     });
+//   } catch (error) {
+//     console.error('Debug route error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//       stack: error.stack
+//     });
+//   }
+// });
 
 // Add this new debug route
-router.get('/debug/match/:userId', protect, async (req, res) => {
-  try {
-    const testId = req.params.userId;
-    const notifications = await Notification.find({});
+// router.get('/debug/match/:userId', protect, async (req, res) => {
+//   try {
+//     const testId = req.params.userId;
+//     const notifications = await Notification.find({});
     
-    const matches = notifications.map(notif => ({
-      notificationId: notif._id,
-      recipientId: notif.recipient,
-      recipientIdString: notif.recipient.toString(),
-      doesMatch: notif.recipient.toString() === testId,
-      testId: testId
-    }));
+//     const matches = notifications.map(notif => ({
+//       notificationId: notif._id,
+//       recipientId: notif.recipient,
+//       recipientIdString: notif.recipient.toString(),
+//       doesMatch: notif.recipient.toString() === testId,
+//       testId: testId
+//     }));
 
-    res.json({
-      success: true,
-      matches,
-      currentUserId: req.user.id,
-      notificationCount: notifications.length
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       matches,
+//       currentUserId: req.user.id,
+//       notificationCount: notifications.length
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// });
 
 // Remove the /notifications prefix as it's already added in index.js
 router.get('/', protect, getNotifications);

@@ -53,11 +53,6 @@ const createNotification = async (notificationData) => {
       throw new Error('Recipient not found');
     }
 
-
-
-    
-
-
     const swappedMessage = swapTransactionMessage(notificationData.message);
     // console.log('Original message:', notificationData.message);
     // console.log('Swapped message:', swappedMessage);

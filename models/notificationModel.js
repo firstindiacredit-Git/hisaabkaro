@@ -4,64 +4,64 @@ const notificationSchema = new mongoose.Schema({
   // Recipient is always a client user
   recipient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ClientUser',
-    required: true
+    ref: "ClientUser",
+    required: true,
   },
   recipientEmail: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
   // Sender is always a user
   sender: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   senderEmail: {
     type: String,
-    required: true
+    required: true,
   },
 
   // Notification content
   type: {
     type: String,
-    enum: ['TRANSACTION', 'SYSTEM', 'REMINDER'],
-    required: true
+    enum: ["TRANSACTION", "SYSTEM", "REMINDER", "NEW_INVOICE", "INVOICE_SENT","INVOICE"],
+    required: true,
   },
   title: {
     type: String,
-    required: true
+    required: true,
   },
   message: {
     type: String,
-    required: true
+    required: true,
   },
 
   // Related content reference (simplified)
   relatedId: {
     type: mongoose.Schema.Types.ObjectId,
-    refPath: 'relatedModel'
+    refPath: "relatedModel",
   },
   relatedModel: {
     type: String,
-    enum: ['Transaction', 'Book']
+    enum: ["Transaction", "Book","Invoice"],
   },
   relatedAction: {
     type: String,
-    enum: ['created', 'updated', 'deleted']
+    enum: ["created", "updated", "deleted"],
   },
 
   isRead: {
     type: Boolean,
     default: false,
-    index: true
+    index: true,
   },
   createdAt: {
     type: Date,
     default: Date.now,
-    index: true
-  }
+    index: true,
+  },
 });
 
 // Add compound index for email queries

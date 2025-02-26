@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Invoice = require("../models/invoiceModel");
 const { validateInvoice } = require("../utils/validation");
 const Notification = require("../models/notificationModel");
-
+const notificationController = require("./notificationController");
 // Create new invoice
 exports.createInvoice = async (req, res) => {
   try {
@@ -459,9 +459,23 @@ exports.sentInvoice = async (req, res) => {
       });
     }
 
+    // **Create notification in the database**
+    const notificationData = {
+      recipient: recipientId,
+      sender: userId,
+      type: "INVOICE_SENT",
+      title: "New Invoice Sent",
+      message: `An invoice (#${invoice.invoiceNumber}) of amount $${invoice.total} has been sent to you.`,
+      relatedId: invoice._id,
+      onModel: "Invoice",
+      actionType: "created",
+    };
+
+    await notificationController.createNotification(notificationData); // Call the function to create notification
+
     res.status(201).json({
       success: true,
-      message: "Invoice sent successfully",
+      message: "Invoice sent successfully and notification created",
       data: invoice,
     });
   } catch (error) {
@@ -472,6 +486,7 @@ exports.sentInvoice = async (req, res) => {
     });
   }
 };
+
 
 // Add this new controller method for getting sent invoices
 exports.getSentInvoices = async (req, res) => {
