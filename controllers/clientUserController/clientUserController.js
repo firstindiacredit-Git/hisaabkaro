@@ -5,7 +5,7 @@ const SelfRecord = require("../../models/transactionModel/selfRecordModel");
 // Create a new client user
 exports.createClientUser = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { name, mobile, email } = req.body;
 
     // Check if the client already exists for this user

@@ -1,36 +1,30 @@
 const jwt = require("jsonwebtoken");
 
-const authenticate = async (req, res, next) => {
+const authenticate = (req, res, next) => {
+  const authHeader = req.header("Authorization");
+
+  if (!authHeader) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. No token provided." });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. Token is missing." });
+  }
   try {
-    // Get token from header
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token, authorization denied'
-      });
-    }
-
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    req.userId = decoded.id; // Set userId on the request
+    req.userEmail = decoded.email; // Set userEmail on the request
+    // console.log('Authenticated user from middleware:', req.user);
 
-    // Add user info to request object from decoded token
-    req.userId = decoded.id;
-    req.userEmail = decoded.email;
-    req.user = {
-      _id: decoded.id,
-      email: decoded.email,
-      name: decoded.name
-    };
-    
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Token is not valid'
-    });
+    res.status(400).json({ message: "Invalid token." });
   }
 };
 
@@ -38,12 +32,16 @@ const protect = (req, res, next) => {
   const authHeader = req.header("Authorization");
 
   if (!authHeader) {
-    return res.status(401).json({ message: "Access denied. No token provided." });
+    return res
+      .status(401)
+      .json({ message: "Access denied. No token provided." });
   }
 
   const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(401).json({ message: "Access denied. Token is missing." });
+    return res
+      .status(401)
+      .json({ message: "Access denied. Token is missing." });
   }
 
   try {
@@ -51,14 +49,15 @@ const protect = (req, res, next) => {
     req.user = {
       id: decoded.id.toString(),
       email: decoded.email,
-      name: decoded.name
+      name: decoded.name,
     };
+    // console.log('Protected route accessed by user:', req.user);
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error("Auth middleware error:", error);
     res.status(401).json({
       success: false,
-      message: 'Not authorized'
+      message: "Not authorized",
     });
   }
 };

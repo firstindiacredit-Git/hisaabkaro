@@ -164,8 +164,8 @@ exports.getInvoiceById = async (req, res) => {
     const invoice = await Invoice.findOne({
       _id: req.params.id,
       $or: [
-        { userId: req.user._id }, // Sender
-        { recipientId: req.user._id }, // Recipient
+        { userId: req.user.id }, // Sender
+        { recipientId: req.user.id }, // Recipient
         { "billingDetails.to.email": req.user.email }, // Fallback for recipient
       ],
     })
@@ -231,7 +231,7 @@ exports.updateInvoice = async (req, res) => {
     const invoiceId = req.params.id;
 
     const invoice = await Invoice.findOneAndUpdate(
-      { _id: invoiceId, userId: req.user._id },
+      { _id: invoiceId, userId: req.user.id },
       invoiceData,
       { new: true, runValidators: true }
     ).select(
@@ -281,7 +281,7 @@ exports.updateInvoice = async (req, res) => {
 exports.deleteInvoice = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const invoice = await Invoice.findOneAndDelete({ _id: id, userId });
 
@@ -322,7 +322,7 @@ exports.updateInvoiceStatus = async (req, res) => {
     }
 
     const invoice = await Invoice.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      { _id: req.params.id, userId: req.user.id },
       {
         status,
         ...(status === "sent" ? { sentAt: new Date() } : {}),
@@ -355,7 +355,7 @@ exports.updateInvoiceStatus = async (req, res) => {
 // Get saved invoices
 exports.getSavedInvoices = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { sortBy = "createdAt", order = "desc" } = req.query;
 
     const query = { userId };
@@ -409,7 +409,7 @@ exports.getSavedInvoices = async (req, res) => {
 exports.sentInvoice = async (req, res) => {
   try {
     const { recipientEmail, recipientId, ...invoiceData } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     // Validate required fields
     if (!recipientEmail || !recipientId) {
