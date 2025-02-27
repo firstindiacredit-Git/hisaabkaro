@@ -22,6 +22,7 @@ const upload = require("multer")();
 const notificationRoutes = require("./routes/notificationRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const fcmRoutes = require("./routes/fcmRoutes");
+const passwordRoutes = require("./routes/passwordRoutes");
 //databse call
 connectDb();
 //rest object
@@ -160,7 +161,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/collab-transactions", collabtransactionRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/invoices", invoiceRoutes);
-
+app.use("/api/passwords", passwordRoutes);
 // FCM routes
 app.use("/api/fcm", fcmRoutes);
 
