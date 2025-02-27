@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const fcmController = require('../controllers/fcmController');
-const { protect } = require('../middleware/authMiddleware');
+const fcmController = require('../../controllers/fcmController/fcmController');
+const { protect } = require('../../middleware/authMiddleware');
 
 // FCM token management
 router.post('/token', protect,fcmController.saveToken);

@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const Invoice = require("../models/invoiceModel");
-const { validateInvoice } = require("../utils/validation");
-const Notification = require("../models/notificationModel");
-const notificationController = require("./notificationController");
+const Invoice = require("../../models/invoiceModel/invoiceModel");
+const { validateInvoice } = require("../../utils/validation");
+const Notification = require("../../models/notificationModel/notificationModel");
+const notificationController = require("../notificationController/notificationController");
 // Create new invoice
 exports.createInvoice = async (req, res) => {
   try {
@@ -486,7 +486,6 @@ exports.sentInvoice = async (req, res) => {
     });
   }
 };
-
 
 // Add this new controller method for getting sent invoices
 exports.getSentInvoices = async (req, res) => {

@@ -17,8 +17,6 @@ const transactionSchema = new mongoose.Schema(
       ref: "ClientUser",
       required: true,
     },
-  
- 
     transactionHistory: [ 
       {
         transactionType: {

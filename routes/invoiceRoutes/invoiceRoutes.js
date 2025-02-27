@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { authenticate } = require("../middleware/authMiddleware");
-const invoiceController = require("../controllers/invoiceController");
+const { authenticate } = require("../../middleware/authMiddleware");
+const invoiceController = require("../../controllers/invoiceController/invoiceController");
 
 // Get received and sent invoices - these should come BEFORE /:id routes
 router.get(

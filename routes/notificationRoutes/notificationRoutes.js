@@ -8,10 +8,10 @@ const {
   clearAllNotifications,
   clearReadNotifications,
   
-} = require('../controllers/notificationController');
-const { protect } = require('../middleware/authMiddleware');
-const Notification = require('../models/notificationModel');
-const { emitNotification } = require('../index');
+} = require('../../controllers/notificationController/notificationController');
+const { protect } = require('../../middleware/authMiddleware');
+const Notification = require('../../models/notificationModel/notificationModel');
+const { emitNotification } = require('../../index');
 
 // Debug route to check all notifications without any filters
 // router.get('/debug/all', protect, async (req, res) => {

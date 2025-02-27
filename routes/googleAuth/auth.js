@@ -2,7 +2,7 @@ const express = require("express");
 const passport = require("passport");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const User = require("../models/userModel/userModel");
+const User = require("../../models/userModel/userModel");
 
 // Endpoint to get Google Auth URL
 router.get("/google/url", (req, res) => {

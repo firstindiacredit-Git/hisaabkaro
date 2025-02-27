@@ -1,17 +1,21 @@
-const User = require('../models/userModel/userModel');
-const Transaction = require('../models/transactionModel/transactionModel');
-const Book = require('../models/bookModel/bookModel');
-const Admin = require('../models/adminModel');
+const User = require("../../models/userModel/userModel");
+const Transaction = require("../../models/transactionModel/transactionModel");
+const Book = require("../../models/bookModel/bookModel");
+const Admin = require("../../models/adminModel/adminModel");
 const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 // Create JWT token
 const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024', {
-    expiresIn: '7d'
-  });
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET || "your-super-secret-jwt-key-2024",
+    {
+      expiresIn: "7d",
+    }
+  );
 };
 
 // Send JWT token response
@@ -37,7 +41,7 @@ const signup = async (req, res) => {
       username: req.body.username,
       email: req.body.email,
       password: req.body.password,
-      role: req.body.role || 'admin'
+      role: req.body.role || "admin",
     });
 
     createSendToken(newAdmin, 201, res);
@@ -102,7 +106,10 @@ const protect = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024');
+    const decoded = await promisify(jwt.verify)(
+      token,
+      process.env.JWT_SECRET || "your-super-secret-jwt-key-2024"
+    );
 
     // Check if admin still exists
     const currentAdmin = await Admin.findById(decoded.id);
@@ -131,25 +138,25 @@ const getDashboardStats = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const totalBooks = await Book.countDocuments();
     const totalTransactions = await Transaction.countDocuments();
-    
+
     // Get total amount from all confirmed transactions (absolute sum)
     const totalAmountResult = await Transaction.aggregate([
       {
-        $unwind: "$transactionHistory"
+        $unwind: "$transactionHistory",
       },
       {
         $match: {
-          "transactionHistory.confirmationStatus": "confirmed"
-        }
+          "transactionHistory.confirmationStatus": "confirmed",
+        },
       },
       {
         $group: {
           _id: null,
           total: {
-            $sum: "$transactionHistory.amount" // Simply sum all amounts without considering transaction type
-          }
-        }
-      }
+            $sum: "$transactionHistory.amount", // Simply sum all amounts without considering transaction type
+          },
+        },
+      },
     ]);
     const totalAmount = totalAmountResult[0]?.total || 0;
 
@@ -162,60 +169,60 @@ const getDashboardStats = async (req, res) => {
     const monthlyUsers = await User.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfYear, $lte: endOfYear }
-        }
+          createdAt: { $gte: startOfYear, $lte: endOfYear },
+        },
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
-          count: { $sum: 1 }
-        }
+          _id: { $month: "$createdAt" },
+          count: { $sum: 1 },
+        },
       },
       {
-        $sort: { _id: 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     // Monthly books created
     const monthlyBooks = await Book.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfYear, $lte: endOfYear }
-        }
+          createdAt: { $gte: startOfYear, $lte: endOfYear },
+        },
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
-          count: { $sum: 1 }
-        }
+          _id: { $month: "$createdAt" },
+          count: { $sum: 1 },
+        },
       },
       {
-        $sort: { _id: 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     // Monthly transactions
     const monthlyTransactions = await Transaction.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfYear, $lte: endOfYear }
-        }
+          createdAt: { $gte: startOfYear, $lte: endOfYear },
+        },
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
-          count: { $sum: 1 }
-        }
+          _id: { $month: "$createdAt" },
+          count: { $sum: 1 },
+        },
       },
       {
-        $sort: { _id: 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     // Convert aggregation results to arrays with 12 months
     const convertToYearArray = (monthlyData) => {
       const yearArray = new Array(12).fill(0);
-      monthlyData.forEach(item => {
+      monthlyData.forEach((item) => {
         yearArray[item._id - 1] = item.count;
       });
       return yearArray;
@@ -224,7 +231,7 @@ const getDashboardStats = async (req, res) => {
     const monthlyStats = {
       users: convertToYearArray(monthlyUsers),
       books: convertToYearArray(monthlyBooks),
-      transactions: convertToYearArray(monthlyTransactions)
+      transactions: convertToYearArray(monthlyTransactions),
     };
 
     res.status(200).json({
@@ -234,13 +241,13 @@ const getDashboardStats = async (req, res) => {
         totalBooks,
         totalTransactions,
         totalAmount,
-        monthlyStats
-      }
+        monthlyStats,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -248,26 +255,29 @@ const getDashboardStats = async (req, res) => {
 // Get all users
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({}, {
-      name: 1,
-      email: 1,
-      phone: 1,
-      profilePicture: 1,
-      createdAt: 1
-    }).sort({ createdAt: -1 });
+    const users = await User.find(
+      {},
+      {
+        name: 1,
+        email: 1,
+        phone: 1,
+        profilePicture: 1,
+        createdAt: 1,
+      }
+    ).sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
-        users
-      }
+        users,
+      },
     });
   } catch (error) {
-    console.error('Error getting users:', error);
+    console.error("Error getting users:", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting users',
-      error: error.message
+      message: "Error getting users",
+      error: error.message,
     });
   }
 };
@@ -281,20 +291,20 @@ const getUserDetails = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
-    console.error('Error in getUserDetails:', error);
+    console.error("Error in getUserDetails:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching user details',
-      error: error.message
+      message: "Error fetching user details",
+      error: error.message,
     });
   }
 };
@@ -303,53 +313,53 @@ const getUserDetails = async (req, res) => {
 const getUserTransactions = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     // Find transactions where the user is either the owner or client
     const transactions = await Transaction.find({
-      $or: [
-        { userId: userId },  
-        { clientUserId: userId }  
-      ]
+      $or: [{ userId: userId }, { clientUserId: userId }],
     })
-    .populate('bookId', 'bookname')
-    .populate('userId', 'name email')
-    .populate('clientUserId', 'name email mobile')
-    .sort({ createdAt: -1 });
+      .populate("bookId", "bookname")
+      .populate("userId", "name email")
+      .populate("clientUserId", "name email mobile")
+      .sort({ createdAt: -1 });
 
     if (!transactions || transactions.length === 0) {
       return res.status(200).json({
         success: true,
-        data: []
+        data: [],
       });
     }
 
     // Transform transactions to match frontend expectations
     const transformedTransactions = [];
-    
-    transactions.forEach(transaction => {
-      if (transaction.transactionHistory && transaction.transactionHistory.length > 0) {
-        transaction.transactionHistory.forEach(history => {
+
+    transactions.forEach((transaction) => {
+      if (
+        transaction.transactionHistory &&
+        transaction.transactionHistory.length > 0
+      ) {
+        transaction.transactionHistory.forEach((history) => {
           transformedTransactions.push({
             _id: history._id,
             bookId: {
               _id: transaction.bookId._id,
-              bookname: transaction.bookId.bookname
+              bookname: transaction.bookId.bookname,
             },
             amount: history.amount,
             type: history.transactionType,
-            notes: history.description || '',
+            notes: history.description || "",
             createdAt: history.transactionDate,
             createdBy: history.initiatedBy,
             status: history.confirmationStatus,
-            outstandingBalance: history.outstandingBalance
+            outstandingBalance: history.outstandingBalance,
           });
         });
       }
     });
 
     // Sort by date descending
-    transformedTransactions.sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
+    transformedTransactions.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
     // console.log('Found transactions:', transactions.length);
@@ -357,15 +367,14 @@ const getUserTransactions = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: transformedTransactions
+      data: transformedTransactions,
     });
-
   } catch (error) {
-    console.error('Error in getUserTransactions:', error);
+    console.error("Error in getUserTransactions:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching user transactions',
-      error: error.message
+      message: "Error fetching user transactions",
+      error: error.message,
     });
   }
 };
@@ -380,13 +389,13 @@ const deleteUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     // Delete user's profile picture if exists
     if (user.profilePicture) {
-      const picturePath = path.join(__dirname, '..', user.profilePicture);
+      const picturePath = path.join(__dirname, "..", user.profilePicture);
       if (fs.existsSync(picturePath)) {
         fs.unlinkSync(picturePath);
       }
@@ -403,14 +412,14 @@ const deleteUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'User and all associated data deleted successfully'
+      message: "User and all associated data deleted successfully",
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error("Error deleting user:", error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting user',
-      error: error.message
+      message: "Error deleting user",
+      error: error.message,
     });
   }
 };
@@ -420,32 +429,36 @@ const getBooks = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || '';
-    const sortField = req.query.sortField || 'createdAt';
-    const sortOrder = req.query.sortOrder || 'desc';
+    const search = req.query.search || "";
+    const sortField = req.query.sortField || "createdAt";
+    const sortOrder = req.query.sortOrder || "desc";
 
     // Build search query
-    const searchQuery = search ? {
-      $or: [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ]
-    } : {};
+    const searchQuery = search
+      ? {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
 
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
     // Build sort object
     const sort = {};
-    sort[sortField] = sortOrder === 'desc' ? -1 : 1;
+    sort[sortField] = sortOrder === "desc" ? -1 : 1;
 
     // Get books with pagination and populate user details
     const books = await Book.find(searchQuery)
-      .populate('userId', 'name email phone')
+      .populate("userId", "name email phone")
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .select('name description userId createdAt updatedAt totalAmount totalTransactions');
+      .select(
+        "name description userId createdAt updatedAt totalAmount totalTransactions"
+      );
 
     // Get total count for pagination
     const totalBooks = await Book.countDocuments(searchQuery);
@@ -458,16 +471,16 @@ const getBooks = async (req, res) => {
           total: totalBooks,
           page,
           limit,
-          totalPages: Math.ceil(totalBooks / limit)
-        }
-      }
+          totalPages: Math.ceil(totalBooks / limit),
+        },
+      },
     });
   } catch (error) {
-    console.error('Error getting books:', error);
+    console.error("Error getting books:", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting books',
-      error: error.message
+      message: "Error getting books",
+      error: error.message,
     });
   }
 };
@@ -478,64 +491,64 @@ const getBooksCreator = async (req, res) => {
     const books = await Book.aggregate([
       {
         $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'creator'
-        }
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "creator",
+        },
       },
       {
         $unwind: {
-          path: '$creator',
-          preserveNullAndEmptyArrays: true
-        }
+          path: "$creator",
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $lookup: {
-          from: 'transactions',
-          localField: '_id',
-          foreignField: 'bookId',
-          as: 'transactions'
-        }
+          from: "transactions",
+          localField: "_id",
+          foreignField: "bookId",
+          as: "transactions",
+        },
       },
       {
         $addFields: {
           membersCount: {
             $size: {
-              $setUnion: ['$transactions.clientUserId']
-            }
-          }
-        }
+              $setUnion: ["$transactions.clientUserId"],
+            },
+          },
+        },
       },
       {
         $project: {
           _id: 1,
-          name: '$bookname',
+          name: "$bookname",
           createdAt: 1,
           updatedAt: 1,
           membersCount: 1,
-          'creator._id': 1,
-          'creator.name': 1,
-          'creator.email': 1,
-          status: { $literal: 'Active' }
-        }
+          "creator._id": 1,
+          "creator.name": 1,
+          "creator.email": 1,
+          status: { $literal: "Active" },
+        },
       },
       {
-        $sort: { membersCount: -1, createdAt: -1 }
-      }
+        $sort: { membersCount: -1, createdAt: -1 },
+      },
     ]);
 
     res.status(200).json({
       success: true,
       count: books.length,
-      data: books
+      data: books,
     });
   } catch (error) {
-    console.error('Error in getBooks:', error);
+    console.error("Error in getBooks:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching books',
-      error: error.message
+      message: "Error fetching books",
+      error: error.message,
     });
   }
 };
@@ -550,7 +563,7 @@ const deleteBook = async (req, res) => {
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: "Book not found",
       });
     }
 
@@ -562,14 +575,14 @@ const deleteBook = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Book and all associated transactions deleted successfully'
+      message: "Book and all associated transactions deleted successfully",
     });
   } catch (error) {
-    console.error('Error deleting book:', error);
+    console.error("Error deleting book:", error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting book',
-      error: error.message
+      message: "Error deleting book",
+      error: error.message,
     });
   }
 };
@@ -584,36 +597,40 @@ const getBookTransactionsCount = async (req, res) => {
     if (!book) {
       return res.status(404).json({
         status: "fail",
-        message: "Book not found"
+        message: "Book not found",
       });
     }
 
     // Count transactions for the book
-    const transactionsCount = await Transaction.countDocuments({ bookId: bookId });
+    const transactionsCount = await Transaction.countDocuments({
+      bookId: bookId,
+    });
 
     // Get count of unique members (clients) in the book
-    const uniqueMembers = await Transaction.distinct('clientUserId', { bookId: bookId });
+    const uniqueMembers = await Transaction.distinct("clientUserId", {
+      bookId: bookId,
+    });
     const membersCount = uniqueMembers.length;
 
     // Get all unique member details
     const memberDetails = await Transaction.find({ bookId: bookId })
       .populate({
-        path: 'clientUserId',
-        select: 'name email mobile createdAt'
+        path: "clientUserId",
+        select: "name email mobile createdAt",
       })
-      .select('clientUserId outstandingBalance')
+      .select("clientUserId outstandingBalance")
       .lean();
 
     // Create a map of member details with their latest outstanding balance
     const memberMap = new Map();
-    memberDetails.forEach(transaction => {
+    memberDetails.forEach((transaction) => {
       if (transaction.clientUserId) {
         memberMap.set(transaction.clientUserId._id.toString(), {
           name: transaction.clientUserId.name,
           email: transaction.clientUserId.email,
           mobile: transaction.clientUserId.mobile,
           createdAt: transaction.clientUserId.createdAt,
-          outstandingBalance: transaction.outstandingBalance
+          outstandingBalance: transaction.outstandingBalance,
         });
       }
     });
@@ -627,31 +644,35 @@ const getBookTransactionsCount = async (req, res) => {
       .limit(5)
       .populate([
         {
-          path: 'userId',
-          select: 'name email'
+          path: "userId",
+          select: "name email",
         },
         {
-          path: 'clientUserId',
-          select: 'name email mobile'
-        }
+          path: "clientUserId",
+          select: "name email mobile",
+        },
       ])
-      .select('transactionHistory outstandingBalance createdAt');
+      .select("transactionHistory outstandingBalance createdAt");
 
     // Format the recent transactions for better readability
-    const formattedTransactions = recentTransactions.map(transaction => ({
+    const formattedTransactions = recentTransactions.map((transaction) => ({
       id: transaction._id,
       outstandingBalance: transaction.outstandingBalance,
       createdAt: transaction.createdAt,
-      user: transaction.userId ? {
-        name: transaction.userId.name,
-        email: transaction.userId.email
-      } : null,
-      client: transaction.clientUserId ? {
-        name: transaction.clientUserId.name,
-        email: transaction.clientUserId.email,
-        mobile: transaction.clientUserId.mobile
-      } : null,
-      history: transaction.transactionHistory
+      user: transaction.userId
+        ? {
+            name: transaction.userId.name,
+            email: transaction.userId.email,
+          }
+        : null,
+      client: transaction.clientUserId
+        ? {
+            name: transaction.clientUserId.name,
+            email: transaction.clientUserId.email,
+            mobile: transaction.clientUserId.mobile,
+          }
+        : null,
+      history: transaction.transactionHistory,
     }));
 
     res.status(200).json({
@@ -662,15 +683,14 @@ const getBookTransactionsCount = async (req, res) => {
         transactionsCount,
         membersCount,
         members,
-        recentTransactions: formattedTransactions
-      }
+        recentTransactions: formattedTransactions,
+      },
     });
-
   } catch (error) {
-    console.error('Error in getBookTransactionsCount:', error);
+    console.error("Error in getBookTransactionsCount:", error);
     res.status(400).json({
       status: "fail",
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -687,5 +707,5 @@ module.exports = {
   getBooks,
   getBooksCreator,
   deleteBook,
-  getBookTransactionsCount
+  getBookTransactionsCount,
 };

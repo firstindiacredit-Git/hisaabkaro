@@ -1,5 +1,5 @@
-const admin = require("../firebase-admin");
-const Token = require("../models/tokenModel/Token");
+const admin = require("../../firebase-admin");
+const Token = require("../../models/tokenModel/Token");
 
 const fcmController = {
   // Save or update FCM token
