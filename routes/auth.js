@@ -60,7 +60,7 @@ router.get(
 
       const token = jwt.sign(
         {
-          id: req.user.id,
+          id: req.user._id,
           email: req.user.email,
           name: req.user.name,
           phone: req.user.phone || null,

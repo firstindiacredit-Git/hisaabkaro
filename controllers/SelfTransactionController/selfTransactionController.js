@@ -8,7 +8,7 @@ exports.createTransaction = async (req, res) => {
   try {
     const { bookId, clientUserId, transactionType, amount, description } =
       req.body;
-    const userId = req.userId;
+    const userId = req.user.id;
 
     // Validate amount
     const parsedAmount = parseFloat(amount);

@@ -13,14 +13,14 @@ const {
 router.use(protect);
 
 // Get all passwords and search passwords
-router.get("/passwords", getPasswords);
-router.get("/passwords/search", searchPasswords);
+router.get("/", getPasswords);
+router.get("/search", searchPasswords);
 
 // Add new password
-router.post("/passwords", addPassword);
+router.post("/", addPassword);
 
 // Update and delete password
-router.put("/passwords/:id", updatePassword);
-router.delete("/passwords/:id", deletePassword);
+router.put("/:id", updatePassword);
+router.delete("/:id", deletePassword);
 
 module.exports = router;

@@ -15,16 +15,28 @@ const fcmController = {
         });
       }
 
-      // Remove any old tokens for this user before saving the new one
-      await Token.deleteMany({ userId });
+      // Check if this token already exists in the database for another user
+      const existingToken = await Token.findOne({ token });
+
+      if (existingToken && existingToken.userId.toString() !== userId) {
+        // If token belongs to a different user, delete the old record
+        await Token.deleteOne({ token });
+      }
+
+      // Check if the user already has a token saved
+      const userExistingToken = await Token.findOne({ userId });
+
+      if (userExistingToken) {
+        // If the user already has a different token, remove it
+        await Token.deleteOne({ userId });
+      }
 
       // Save the new token
-      const newToken = new Token({ userId, token });
-      await newToken.save();
+      const newToken = await Token.create({ token, userId });
 
       res.status(200).json({
         success: true,
-        message: "Token saved successfully",
+        message: "Token updated successfully",
         token: newToken,
       });
     } catch (error) {
