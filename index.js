@@ -23,6 +23,7 @@ const notificationRoutes = require("./routes/notificationRoutes/notificationRout
 const invoiceRoutes = require("./routes/invoiceRoutes/invoiceRoutes");
 const fcmRoutes = require("./routes/fcmRoutes/fcmRoutes");
 const response = require('./routes/responseRoutes/resposneRoute')
+const passwordRoutes = require("./routes/passwordRoute/passwordRoute");
 //databse call
 connectDb();
 //rest object
@@ -162,6 +163,7 @@ app.use("/api/collab-transactions", collabtransactionRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/response", response);
+app.use("/api/passwords", passwordRoutes);
 // FCM routes
 app.use("/api/fcm", fcmRoutes);
 
