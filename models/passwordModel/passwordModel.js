@@ -27,14 +27,7 @@ const passwordSchema = new mongoose.Schema(
       type: String,
       default: "",
       },
-    pin: {
-      type: String,
-      required: true,
-    },
-    isPinSet: {
-      type: Boolean,
-      default: false,
-    },
+ 
   },
   {
     timestamps: true,

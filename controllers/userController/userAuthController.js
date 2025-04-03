@@ -284,7 +284,7 @@ const updatePin = async (req, res) => {
 
 // Verify PIN Function
 const verifyPin = async (req, res) => {
-  const { userId } = req.params;
+  const  userId  = req.user.id;
   const { pin } = req.body;
 
   try {

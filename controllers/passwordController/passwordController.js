@@ -1,6 +1,4 @@
 const Password = require("../../models/passwordModel/passwordModel");
- 
-
 // Get all passwords for a user
 exports.getPasswords = async (req, res) => {
   try {
@@ -18,7 +16,7 @@ exports.addPassword = async (req, res) => {
   try {
     const { website, url, username, password, notes } = req.body;
 
-    // Create new password entry
+    // Create new password entry (no pin here)
     const newPassword = new Password({
       userId: req.user.id,
       website,
@@ -31,12 +29,9 @@ exports.addPassword = async (req, res) => {
     const savedPassword = await newPassword.save();
     res.status(201).json(savedPassword);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error adding password", error: error.message });
+    res.status(500).json({ message: "Error adding password", error: error.message });
   }
 };
-
 // Update a password
 exports.updatePassword = async (req, res) => {
   try {
