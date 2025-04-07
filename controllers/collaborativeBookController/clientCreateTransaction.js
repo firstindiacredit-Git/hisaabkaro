@@ -1,7 +1,7 @@
 const Transaction = require("../../models/transactionModel/transactionModel");
 const Client = require("../../models/clientUserModel/clientUserModel");
 const User = require("../../models/userModel/userModel");
-const notificationapi = require("notificationapi-node-server-sdk").default;
+const notificationapi = require('notificationapi-node-server-sdk').default
 const upload = require("../../middleware/uploadMiddleware"); // Multer middleware for file uploads
 const notificationController = require("../notificationController/notificationController");
 const axios = require("axios");
@@ -13,8 +13,8 @@ const Book = require("../../models/bookModel/bookModel");
 
 require("dotenv").config();
 notificationapi.init(
-  process.env.NotificationclientId,
-  process.env.NotificationclientSecret
+  process.env.NOTIFICATIONAPI_CLIENT_ID,
+  process.env.NOTIFICATIONAPI_CLIENT_SECRET
 );
 
 const addExistingTransaction = async (req, res) => {

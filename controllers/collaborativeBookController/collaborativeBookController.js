@@ -1,11 +1,11 @@
 
 const Transaction = require("../../models/transactionModel/transactionModel");
 const Client = require("../../models/clientUserModel/clientUserModel");
- const notificationapi = require("notificationapi-node-server-sdk").default;
+const notificationapi = require('notificationapi-node-server-sdk').default
  const Book = require("../../models/bookModel/bookModel");
 
 require("dotenv").config();
-notificationapi.init(process.env.NotificationclientId, process.env.NotificationclientSecret);
+notificationapi.init(process.env.NOTIFICATIONAPI_CLIENT_ID, process.env.NOTIFICATIONAPI_CLIENT_SECRET);
 // Fetch transactions for a user or client
 const getTransactions = async (req, res) => {
   try {
