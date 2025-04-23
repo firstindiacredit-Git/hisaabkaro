@@ -67,7 +67,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://:3000", "http://localhost:3500", process.env.REACT_APP_URI],
+    origin: ["http://:3000", "http://localhost:3500", "http://localhost:8081", "http://192.168.29.66:8081",  "http://192.168.1.100:5100", process.env.REACT_APP_URI],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
@@ -84,7 +84,7 @@ app.use(express.json());
 
 // CORS configuration - place this before any routes
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3500", process.env.REACT_APP_URI],
+  origin: ["http://localhost:3000", "http://localhost:3500","http://localhost:8081","http://192.168.29.66:8081", "http://192.168.1.100:5100", process.env.REACT_APP_URI],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
