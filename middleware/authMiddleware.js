@@ -33,7 +33,7 @@ const authenticate = (req, res, next) => {
     };
     req.userId = decoded.id;
     req.userEmail = decoded.email;
-    console.log("Authenticated user:", {
+    console.log("Authenticated  user:", {
       id: decoded.id,
       email: decoded.email
     });
