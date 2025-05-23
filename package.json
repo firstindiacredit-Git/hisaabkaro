@@ -40,6 +40,9 @@
     "twilio": "^5.4.0",
     "web": "^0.0.2",
     "web-push": "^3.6.7",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/cli": "^7.0.1",
+    "@capacitor/core": "^7.0.1"
   }
 }
